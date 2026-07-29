@@ -1,0 +1,31 @@
+# ─── Environment Variables ───
+.env
+.env.local
+.env.production
+
+# ─── Logs ───
+*.log
+
+# ─── OS Files ───
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editors ───
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Build outputs ───
+dist/
+build/
+out/
+
+# ─── GitHub boilerplate ───
+.github/
+
+# ─── Misc ───
+*.class
+*.pyc

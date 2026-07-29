@@ -1,0 +1,3 @@
+[info] Unnecessary 'const' keyword. Try removing the keyword (C:\Users\Biniyam\Desktop\MyLedger\my_ledger\lib\design\app_colors.dart:20:39)
+[info] Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation (C:\Users\Biniyam\Desktop\MyLedger\my_ledger\lib\design\shared_widgets.dart:605:20)
+[info] Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation (C:\Users\Biniyam\Desktop\MyLedger\my_ledger\lib\widgets\sidebar.dart:250:17)
