@@ -266,9 +266,9 @@ class PrintChequeScreen extends ConsumerWidget {
               _pdfChequeLine('DATE', dateFormat.format(cheque.date)),
               pw.SizedBox(height: 6),
 
-              // Payee line
+              // Payee line — show exactly what was entered (e.g. "Biniyam Teklu" or "Bearer")
               _pdfChequeLine('PAY',
-                  '${cheque.payee.isNotEmpty ? cheque.payee : 'Bearer'}   ${cheque.bearerOrOrder == 'order' ? 'or Order' : 'or Bearer'}'),
+                  cheque.payee.isNotEmpty ? cheque.payee : 'Bearer'),
               pw.SizedBox(height: 6),
 
               // Amount in words

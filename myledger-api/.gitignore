@@ -1,0 +1,24 @@
+# ─── Dependencies ───
+node_modules/
+
+# ─── Environment Variables (secrets!) ───
+.env
+.env.local
+.env.production
+.env.*.local
+
+# ─── Logs ───
+*.log
+server.log
+
+# ─── OS Files ───
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editors ───
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

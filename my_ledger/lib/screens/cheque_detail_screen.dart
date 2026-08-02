@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/account.dart';
+import '../models/transaction.dart';
 import '../providers/accounts_provider.dart';
 import '../providers/cheque_books_provider.dart';
 import '../providers/cheques_provider.dart';
+import '../providers/transactions_provider.dart';
 import '../widgets/cheque_leaf.dart';
 
 class ChequeDetailScreen extends ConsumerStatefulWidget {
@@ -481,11 +483,25 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
     if (confirmed == true) {
       await chequesNotifier.updateStatus(chequeId, newStatus);
 
-      // Refund the amount to the linked account when voiding
+      // When voiding, create a refund transaction record (API already refunds the balance)
       if (isVoid && account != null && refundAmount > 0) {
+        // Update local balance immediately to match the API's refund
         await accountsNotifier.updateBalance(
           account.id,
           account.balance + refundAmount,
+        );
+
+        // Create a refund transaction record
+        final txNotifier = ref.read(transactionsProvider.notifier);
+        await txNotifier.addTransaction(
+          Transaction(
+            id: 0,
+            accountId: account.id,
+            type: 'refund',
+            amount: refundAmount,
+            date: DateTime.now(),
+            description: 'Refund for voided cheque #${cheque?.chequeNumber ?? ''}',
+          ),
         );
       }
 

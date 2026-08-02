@@ -134,6 +134,11 @@ class ApiService {
   }
 
   // ── Transactions ──
+  Future<Map<String, dynamic>> createTransaction(Map<String, dynamic> transaction) async {
+    final response = await _post('/transactions', transaction);
+    return response['data'] as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getTransactions() async {
     final accounts = await getAccounts();
     final allTransactions = <Map<String, dynamic>>[];

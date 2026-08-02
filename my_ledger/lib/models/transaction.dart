@@ -43,7 +43,7 @@ class Transaction {
         id: json['id'] as int,
         accountId: json['account_id'] as int,
         type: json['type'] as String,
-        amount: (json['amount'] as num).toDouble(),
+        amount: _parseDouble(json['amount']),
         date: DateTime.parse(json['date'] as String),
         payee: json['payee'] as String?,
         description: json['description'] as String?,
@@ -51,4 +51,12 @@ class Transaction {
         customerId: json['customer_id'] as int?,
         createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
       );
+
+  /// Handle both num and String types from JSON (MySQL DECIMAL comes as String)
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 }

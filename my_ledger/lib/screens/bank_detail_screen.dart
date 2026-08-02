@@ -239,8 +239,8 @@ class BankDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Chart
-                if (chartSpots.length > 1) ...[
+                // Chart — only show if there are transactions for this account
+                if (accountTransactions.isNotEmpty && chartSpots.length > 1) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(

@@ -10,18 +10,21 @@ class CustomersNotifier extends StateNotifier<List<Customer>> {
   CustomersNotifier(this._store) : super([]);
 
   Future<void> load() async {
-    final jsonList = await _store.getAll('customers');
-    state = jsonList.map((j) => Customer.fromJson(j)).toList();
+    try {
+      final jsonList = await _store.getAll('customers');
+      state = jsonList.map((j) => Customer.fromJson(j)).toList();
+    } catch (_) {
+      state = [];
+    }
   }
 
-  /// Sync customers from API server into local storage
+  /// Sync customers from API server into local storage.
+  /// Always replaces local data with API data (even empty) so user-switching works correctly.
   Future<void> syncFromApi() async {
     try {
       final apiCustomers = await _api.getCustomers();
-      if (apiCustomers.isNotEmpty) {
-        await _store.saveList('customers', apiCustomers);
-        state = apiCustomers.map((j) => Customer.fromJson(j)).toList();
-      }
+      await _store.saveList('customers', apiCustomers);
+      state = apiCustomers.map((j) => Customer.fromJson(j)).toList();
     } catch (_) {
       await load();
     }

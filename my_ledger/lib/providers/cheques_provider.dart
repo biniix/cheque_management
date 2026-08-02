@@ -1,29 +1,95 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/cheque.dart';
+import '../models/cheque.dart' show Cheque;
 import '../services/local_store.dart';
+import '../services/api_service.dart';
+
+/// Result returned by [ChequesNotifier.addCheque].
+class ChequeAddResult {
+  final int chequeId;
+  final Map<String, dynamic>? transactionData;
+  final double? newBalance;
+
+  ChequeAddResult({
+    required this.chequeId,
+    this.transactionData,
+    this.newBalance,
+  });
+}
 
 class ChequesNotifier extends StateNotifier<List<Cheque>> {
   final LocalStore _store;
+  final ApiService _api = ApiService();
 
   ChequesNotifier(this._store) : super([]);
 
   Future<void> load() async {
-    final jsonList = await _store.getAll('cheques');
-    state = jsonList.map((j) => Cheque.fromJson(j)).toList();
+    try {
+      final jsonList = await _store.getAll('cheques');
+      state = jsonList.map((j) => Cheque.fromJson(j)).toList();
+    } catch (_) {
+      state = [];
+    }
   }
 
-  Future<int> addCheque(Cheque cheque) async {
+  /// Sync cheques from API server into local storage.
+  Future<void> syncFromApi() async {
+    try {
+      final apiCheques = await _api.getCheques();
+      await _store.saveList('cheques', apiCheques);
+      state = apiCheques.map((j) => Cheque.fromJson(j)).toList();
+    } catch (_) {
+      await load();
+    }
+  }
+
+  /// Add a cheque by calling the API (which also creates the transaction).
+  /// Returns a [ChequeAddResult] with the generated IDs and transaction data.
+  Future<ChequeAddResult> addCheque(Cheque cheque) async {
     final json = cheque.toJson();
     json.remove('id');
-    final id = await _store.nextId('cheques');
-    json['id'] = id;
+    json.remove('transaction_id'); // Let the API generate this
+
+    Map<String, dynamic>? transactionData;
+    double? newBalance;
+
+    // Try saving to API first (source of truth for IDs)
+    try {
+      final apiResult = await _api.writeCheque(json);
+      final apiCheque = apiResult['data']?['cheque'] as Map<String, dynamic>?;
+      transactionData = apiResult['data']?['transaction'] as Map<String, dynamic>?;
+      newBalance = (apiResult['data']?['newBalance'] as num?)?.toDouble();
+
+      if (apiCheque != null && apiCheque['id'] != null) {
+        json['id'] = apiCheque['id'];
+        if (apiCheque['transaction_id'] != null) {
+          json['transaction_id'] = apiCheque['transaction_id'];
+        }
+        if (apiCheque['created_at'] != null) json['created_at'] = apiCheque['created_at'];
+        if (apiCheque['updated_at'] != null) json['updated_at'] = apiCheque['updated_at'];
+      }
+    } catch (_) {
+      // API unavailable — use local auto-increment ID
+      json['id'] = await _store.nextId('cheques');
+    }
+
     final newCheque = Cheque.fromJson(json);
     state = [...state, newCheque];
     await _store.saveList('cheques', state.map((c) => c.toJson()).toList());
-    return id;
+    return ChequeAddResult(
+      chequeId: json['id'] as int,
+      transactionData: transactionData,
+      newBalance: newBalance,
+    );
   }
 
   Future<void> updateStatus(int id, String status) async {
+    // Try updating on API server first
+    try {
+      await _api.updateChequeStatus(id, status);
+    } catch (_) {
+      // API unavailable — update locally only
+    }
+
     final updatedList = state.map((c) {
       if (c.id == id) return c.copyWith(status: status);
       return c;

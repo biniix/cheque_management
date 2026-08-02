@@ -147,10 +147,10 @@ class ChequeLeaf extends StatelessWidget {
             value: DateFormat('dd / MM / yyyy').format(date),
           ),
 
-          // Payee line
+          // Payee line — show exactly what the user entered (e.g. "Biniyam Teklu" or "Bearer")
           _ChequeLine(
             label: 'Pay',
-            value: '$payee   ${isOrder ? "or Order" : "or Bearer"}',
+            value: payee,
           ),
 
           // Amount in words

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/cheque.dart';
-import '../models/transaction.dart';
 import '../providers/accounts_provider.dart';
 import '../providers/cheque_books_provider.dart';
 import '../providers/cheques_provider.dart';
@@ -346,33 +345,11 @@ class ChequePreviewScreen extends ConsumerWidget {
         if (!proceed) return;
       }
 
-      // Create transaction
-      final txId = await txNotifier.addTransaction(
-        Transaction(
-          id: 0,
-          accountId: account.id,
-          type: 'cheque_issued',
-          amount: -amount,
-          date: date,
-          payee: payee.isEmpty ? 'Bearer' : payee,
-          description: 'Cheque #$nextNumber to ${payee.isEmpty ? 'Bearer' : payee}',
-        ),
-      );
-
-      // Deduct balance for non-post-dated cheques
-      if (!date.isAfter(DateTime.now()) && account.balance >= amount) {
-        await ref.read(accountsProvider.notifier).updateBalance(
-              account.id,
-              account.balance - amount,
-            );
-      }
-
-      // Create cheque
-      chequeId = await chequeNotifier.addCheque(
+      // Issue new cheque — the API automatically creates the transaction and deducts balance
+      final result = await chequeNotifier.addCheque(
         Cheque(
           id: 0,
           chequebookId: chequebookId,
-          transactionId: txId,
           chequeNumber: nextNumber,
           date: date,
           payee: payee.isEmpty ? 'Bearer' : payee,
@@ -383,6 +360,20 @@ class ChequePreviewScreen extends ConsumerWidget {
           status: 'Issued',
         ),
       );
+      chequeId = result.chequeId;
+
+      // Save the transaction that the API created into local state
+      if (result.transactionData != null) {
+        await txNotifier.addTransactionFromApi(result.transactionData!);
+      }
+
+      // Update local account balance to match what the API calculated
+      if (result.newBalance != null) {
+        await ref.read(accountsProvider.notifier).updateBalance(
+              account.id,
+              result.newBalance!,
+            );
+      }
     }
 
     if (!context.mounted) return;

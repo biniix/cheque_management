@@ -62,7 +62,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           _buildQuickActions(),
                           const SizedBox(height: 24),
                         ],
-                        if (chartData.isNotEmpty) ...[
+                        if (accounts.isNotEmpty && chartData.isNotEmpty) ...[
                           _buildChart(context, chartData),
                           const SizedBox(height: 24),
                         ],

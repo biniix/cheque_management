@@ -11,20 +11,24 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
 
   /// Load from local storage (fast, offline-first)
   Future<void> load() async {
-    final jsonList = await _store.getAll('accounts');
-    state = jsonList.map((j) => Account.fromJson(j)).toList();
+    try {
+      final jsonList = await _store.getAll('accounts');
+      state = jsonList.map((j) => Account.fromJson(j)).toList();
+    } catch (_) {
+      // If local data is corrupted, reset
+      state = [];
+    }
   }
 
-  /// Sync accounts from API server into local storage
+  /// Sync accounts from API server into local storage.
+  /// Always replaces local data with API data (even empty) so user-switching works correctly.
   Future<void> syncFromApi() async {
     try {
       final apiAccounts = await _api.getAccounts();
-      if (apiAccounts.isNotEmpty) {
-        await _store.saveList('accounts', apiAccounts);
-        state = apiAccounts.map((j) => Account.fromJson(j)).toList();
-      }
+      await _store.saveList('accounts', apiAccounts);
+      state = apiAccounts.map((j) => Account.fromJson(j)).toList();
     } catch (_) {
-      // API unavailable — just use local data
+      // API unavailable or parse error — fall back to local data
       await load();
     }
   }

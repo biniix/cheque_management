@@ -47,11 +47,19 @@ class Account {
         accountName: json['account_name'] as String? ?? json['bank_name'] as String,
         accountNumber: json['account_number'] as String? ?? '',
         accountLast4: json['account_last4'] as String?,
-        balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+        balance: _parseDouble(json['balance']),
         isVisible: json['is_visible'] == true || json['is_visible'] == 1,
         createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
         updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
       );
+
+  /// Handle both num and String types from JSON (MySQL DECIMAL comes as String)
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
   Account copyWith({
     int? id,
