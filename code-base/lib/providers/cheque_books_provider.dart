@@ -18,7 +18,6 @@ class ChequeBooksNotifier extends StateNotifier<List<ChequeBook>> {
     }
   }
 
-  /// Sync cheque books from API server into local storage.
   Future<void> syncFromApi() async {
     try {
       final apiBooks = await _api.getChequeBooks();
@@ -33,7 +32,6 @@ class ChequeBooksNotifier extends StateNotifier<List<ChequeBook>> {
     final json = book.toJson();
     json.remove('id');
 
-    // Try saving to API first (source of truth for the ID)
     try {
       final apiBook = await _api.createChequeBook(json);
       if (apiBook['id'] != null) {
@@ -41,7 +39,7 @@ class ChequeBooksNotifier extends StateNotifier<List<ChequeBook>> {
         if (apiBook['created_at'] != null) json['created_at'] = apiBook['created_at'];
       }
     } catch (_) {
-      // API unavailable — use local auto-increment ID
+
       json['id'] = await _store.nextId('cheque_books');
     }
 

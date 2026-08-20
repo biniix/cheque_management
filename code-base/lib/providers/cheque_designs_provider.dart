@@ -7,22 +7,17 @@ class ChequeDesignsNotifier extends StateNotifier<List<ChequeDesign>> {
 
   ChequeDesignsNotifier() : super([]);
 
-  /// Load all cheque design templates from the API.
   Future<void> load() async {
     try {
       final designs = await _api.getChequeDesigns();
       state = designs.map((j) => ChequeDesign.fromJson(j)).toList();
     } catch (_) {
-      // Offline / not logged in — keep current state (empty => default design)
+
     }
   }
 
 }
 
-/// Resolve the design for a bank from a loaded list of templates.
-/// A denomination-specific template wins over the bank-wide ('') template.
-/// Use with `ref.watch(chequeDesignsProvider)` so the leaf rebuilds when the
-/// templates finish loading.
 ChequeDesign? designForBank(
   List<ChequeDesign> designs,
   String bankKey, {

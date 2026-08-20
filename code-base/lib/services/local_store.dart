@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 
-/// Generic local persistence service backed by SharedPreferences.
-/// Each entity type has its own key and an auto-incrementing ID counter.
 class LocalStore {
   static final LocalStore _instance = LocalStore._internal();
   factory LocalStore() => _instance;
@@ -16,8 +14,6 @@ class LocalStore {
     if (_initialized) return;
     _initialized = true;
   }
-
-  // ── Generic list helpers ──
 
   Future<List<Map<String, dynamic>>> getList(String key) async {
     try {
@@ -41,8 +37,6 @@ class LocalStore {
     }
   }
 
-  // ── Auto-incrementing IDs ──
-
   Future<int> nextId(String entityType) async {
     final prefs = await SharedPreferences.getInstance();
     final key = '${entityType}_next_id';
@@ -50,8 +44,6 @@ class LocalStore {
     await prefs.setInt(key, current + 1);
     return current;
   }
-
-  // ── Entity CRUD helpers ──
 
   Future<List<Map<String, dynamic>>> getAll(String entityKey) async {
     return getList(entityKey);
@@ -91,8 +83,6 @@ class LocalStore {
     await saveList(entityKey, items);
   }
 
-  // ── Persisted key-value helpers (for visibility toggles, etc.) ──
-
   Future<bool> getBool(String key, {bool defaultValue = false}) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(key) ?? defaultValue;
@@ -118,19 +108,15 @@ class LocalStore {
     await prefs.remove(key);
   }
 
-  // ── Local Auth ──
-
-  /// Hash a password using SHA-256
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);
     return sha256.convert(bytes).toString();
   }
 
-  /// Register a new user locally (store in SharedPreferences)
   Future<Map<String, dynamic>> registerUser(
       String name, String employeeId, String password) async {
     final users = await getList('users');
-    // Check if employee ID already exists
+
     final existing = users.where((u) => u['employee_id'] == employeeId).toList();
     if (existing.isNotEmpty) {
       throw Exception('An account with this employee ID already exists.');
@@ -147,7 +133,6 @@ class LocalStore {
     users.add(user);
     await saveList('users', users);
 
-    // Save current session
     await setString('current_user_employee_id', employeeId);
     await setString('current_user_name', name);
     await setInt('current_user_id', id);
@@ -155,7 +140,6 @@ class LocalStore {
     return {'id': id, 'name': name, 'employee_id': employeeId};
   }
 
-  /// Login a user locally
   Future<Map<String, dynamic>> loginUser(
       String employeeId, String password) async {
     final users = await getList('users');
@@ -168,7 +152,7 @@ class LocalStore {
     }
 
     final user = match.first;
-    // Save current session
+
     await setString('current_user_employee_id', employeeId);
     await setString('current_user_name', user['name'] as String);
     await setInt('current_user_id', user['id'] as int);
@@ -176,7 +160,6 @@ class LocalStore {
     return {'id': user['id'], 'name': user['name'], 'employee_id': user['employee_id']};
   }
 
-  /// Check if a local user session exists
   Future<Map<String, dynamic>?> getCurrentUser() async {
     final employeeId = await getString('current_user_employee_id');
     final name = await getString('current_user_name');
@@ -194,7 +177,6 @@ class LocalStore {
     return null;
   }
 
-  /// Clear the current user session
   Future<void> clearCurrentUser() async {
     await remove('current_user_employee_id');
     await remove('current_user_name');
@@ -203,8 +185,6 @@ class LocalStore {
     await remove('current_user_modules');
     await remove('current_user_must_change');
   }
-
-  // ── Helpers ──
 
   Future<void> setInt(String key, int value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -215,8 +195,6 @@ class LocalStore {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(key);
   }
-
-  // ── Clear all app data ──
 
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();

@@ -1,30 +1,14 @@
-/// A database-driven bank cheque template.
-///
-/// Each bank (CBE, BOA, Awash, Dashen, …) has its own cheque leaf layout, so
-/// instead of hardcoding designs we persist a template per bank. A template
-/// stores the background image and the reference canvas size; the individual
-/// positioned fields (date, payee, amount, …) live in [ChequeTemplateField]
-/// and are linked back via [ChequeTemplateField.templateId].
-///
-/// Persisted through `LocalStore` (SharedPreferences), matching the rest of
-/// the app's models.
+
+
 class ChequeTemplate {
   final int id;
   final String bankKey;
   final String bankName;
 
-  /// Display name of the template (e.g. "CBE 2025 Standard").
   final String templateName;
 
-  /// Background image for the leaf. Either an asset path (e.g.
-  /// `assets/banks/cbe.png`) or a `data:image/png;base64,…` URI when the admin
-  /// uploaded a scan/photo of the real leaf.
   final String backgroundImagePath;
 
-  /// Reference canvas size in logical pixels. The renderer draws fields at
-  /// these coordinates and scales the whole thing to fit the screen, so
-  /// positions stay accurate on every device. Defaults match a standard
-  /// 8.5" x 3.5" cheque at ~96 dpi.
   final double canvasWidth;
   final double canvasHeight;
 
@@ -43,8 +27,6 @@ class ChequeTemplate {
 
   bool get hasBackground => backgroundImagePath.isNotEmpty;
 
-  /// True when the background is an uploaded image (data URI), false for
-  /// asset paths.
   bool get backgroundIsDataUri => backgroundImagePath.startsWith('data:');
 
   Map<String, dynamic> toJson() => {

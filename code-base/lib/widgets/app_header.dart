@@ -14,7 +14,7 @@ class AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // Match the sidebar's floating look: same corner radius + shadow
+
       padding: const EdgeInsets.fromLTRB(8, 6, 24, 6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

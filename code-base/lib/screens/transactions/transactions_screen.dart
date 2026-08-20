@@ -31,7 +31,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final transactions = ref.watch(transactionsProvider);
     final accounts = ref.watch(accountsProvider);
 
-    // Attach account info to each transaction
     final items = <Map<String, dynamic>>[];
     for (final tx in transactions) {
       final acc = accounts.where((a) => a.id == tx.accountId).firstOrNull;
@@ -66,7 +65,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           Expanded(
             child: Column(
               children: [
-                // Top bar (small, rounded — matches the rest of the app)
+
                 AppHeader(
                   title: 'Transactions',
                   actions: [
@@ -89,7 +88,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Filter Chips (smaller, in a bordered box)
+
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
@@ -110,7 +109,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Transaction List
+
                         Expanded(
                           child: _buildTypeList(context, items, _selectedType, currencyFormat),
                         ),
@@ -191,7 +190,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  // Transaction List
   Widget _buildTypeList(BuildContext context, List<Map<String, dynamic>> items, String type, NumberFormat currencyFormat) {
     final List<Map<String, dynamic>> filtered;
     if (type == 'all') {
@@ -250,7 +248,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ),
       child: Row(
         children: [
-          // Bank logo
+
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: Image.asset(
@@ -266,7 +264,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Bank + account name
+
           Expanded(
             child: Row(
               children: [
@@ -315,7 +313,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Amount
+
           Text(
             '${isCredit ? '+' : '-'}ETB ${currencyFormat.format(amount.abs())}',
             style: GoogleFonts.inter(
@@ -325,7 +323,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Info button (admin only)
+
           if (ref.watch(authProvider).isAdmin)
             IconButton(
               tooltip: 'Who did this',
@@ -341,7 +339,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               constraints: const BoxConstraints(),
               padding: const EdgeInsets.all(4),
             ),
-          // View Details
+
           TextButton.icon(
             onPressed: () => _showDetailDialog(context, item, currencyFormat),
             icon: const Icon(Icons.chevron_right_rounded, size: 16),
@@ -398,7 +396,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  // ── Transaction Detail Dialog (popup with Edit / Delete) ──
   void _showDetailDialog(BuildContext context, Map<String, dynamic> item, NumberFormat currencyFormat) {
     final type = (item['type'] as String).toLowerCase();
     final amount = (item['amount'] as num).toDouble();
@@ -476,7 +473,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // Amount card
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
                   decoration: BoxDecoration(
@@ -518,7 +514,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // Details card
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
@@ -538,7 +533,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Edit / Delete actions
                 if (type != 'cheque_issued')
                   Row(
                     children: [
@@ -629,7 +623,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  // ── Edit bottom sheet ──
   void _showEditSheet(BuildContext context, Map<String, dynamic> item, NumberFormat currencyFormat) {
     final txnId = item['id'] as int? ?? 0;
     final type = (item['type'] as String).toLowerCase();
@@ -841,7 +834,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     }
   }
 
-  // Summary Dialog (Centered)
   void _showSummaryDialog(BuildContext context, NumberFormat currencyFormat) {
     final transactions = ref.read(transactionsProvider);
     double deposits = 0, transfers = 0, cheques = 0;
@@ -952,7 +944,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  // Statements Dialog (Updated with Download)
   void _showStatementsDialog(BuildContext context) {
     final accounts = ref.read(accountsProvider);
     final selectedAccountIds = <int>{};
@@ -986,7 +977,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Account Selection
+
                   Text('Select Accounts', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Wrap(
@@ -1015,7 +1006,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     }).toList(),
                   ),
                   const SizedBox(height: 20),
-                  // Date Range
+
                   Row(
                     children: [
                       Expanded(
@@ -1028,7 +1019,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Action Buttons
+
                   Row(
                     children: [
                       Expanded(
@@ -1105,7 +1096,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  /// Builds the statement PDF and returns the raw bytes.
   Future<Uint8List> _buildStatementPdf(DateTime from, DateTime to, Set<int> accountIds) async {
     final transactions = ref.read(transactionsProvider);
     final accounts = ref.read(accountsProvider);
@@ -1133,7 +1123,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             pw.Text('Banks: ${selectedAccounts.map((a) => a.bankName).join(', ')}',
                 style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
             pw.SizedBox(height: 24),
-            // Table Header
+
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
               decoration: const pw.BoxDecoration(color: PdfColors.blue50),
@@ -1147,7 +1137,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               ),
             ),
             pw.SizedBox(height: 8),
-            // Rows
+
             for (final tx in filtered)
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(vertical: 4),
@@ -1199,7 +1189,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   Future<void> _generateAndDownloadStatement(DateTime from, DateTime to, Set<int> accountIds) async {
     try {
       final pdfData = await _buildStatementPdf(from, to, accountIds);
-      // Actually share/download the PDF file with a proper name.
+
       await Printing.sharePdf(
         bytes: pdfData,
         filename: '${_statementFileName(from, to)}.pdf',

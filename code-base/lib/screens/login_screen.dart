@@ -38,12 +38,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.isLoggedIn && (previous == null || !previous.isLoggedIn)) {
         if (next.mustChangePassword) {
-          // First login with the admin-given password — force a password change
           Navigator.pushNamedAndRemoveUntil(
               context, '/change-password', (r) => false);
           return;
         }
-        // Admins land on the admin section; everyone else on the home page
         final route = next.isAdmin ? '/admin/employees' : '/home';
         Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
       }
@@ -59,17 +57,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // App logo
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.asset(
-                    'assets/logos/cheque_management.png',
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 20),
                 Text(
                   'Cheque Management',
                   style: GoogleFonts.poppins(
@@ -79,9 +66,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     letterSpacing: -0.8,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // Sign-in card
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -102,7 +88,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Employee ID
                         _buildField(
                           'Employee ID',
                           _employeeIdCtrl,
@@ -117,7 +102,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        // Password
                         _buildField(
                           'Password',
                           _passwordCtrl,
@@ -134,7 +118,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        // Error message
                         if (authState.error != null) ...[
                           Container(
                             padding: const EdgeInsets.all(10),
@@ -167,7 +150,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 14),
                         ],
 
-                        // Submit button
                         SizedBox(
                           width: double.infinity,
                           height: 44,
@@ -198,7 +180,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
 
-                        // Forgot password & Contact admin (side by side)
                         Center(
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -319,7 +300,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _forgotPassword() {
-    // Do nothing or show a subtle hint if needed, but user asked to remove the toggle message.
   }
 
   Future<void> _submit() async {

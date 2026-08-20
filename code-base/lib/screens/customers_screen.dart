@@ -26,8 +26,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     Future.microtask(() => ref.read(customersProvider.notifier).load());
   }
 
-  /// Opens the add-customer form (name only) in the blurred popup dialog,
-  /// then shows the returned result (if any) as a toast.
   Future<void> _openAddCustomer() async {
     final result = await AppWidgets.showBlurredDialog<String>(
       context,
@@ -39,7 +37,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     }
   }
 
-  /// Opens the edit-customer form (prefilled name) in the blurred popup dialog.
   Future<void> _openEditCustomer(Customer customer) async {
     final result = await AppWidgets.showBlurredDialog<String>(
       context,
@@ -51,7 +48,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     }
   }
 
-  /// Opens the audit trail for this specific customer (admin only).
   void _showCustomerAudit(Customer customer) {
     showAuditLogDialog(
       context,
@@ -62,7 +58,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     );
   }
 
-  /// Asks for confirmation, then deletes the customer.
   Future<void> _confirmDeleteCustomer(
       BuildContext context, Customer customer) async {
     final confirmed = await AppWidgets.confirmDialog(
@@ -173,7 +168,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         ),
         child: Row(
           children: [
-            // Small initials avatar (compact, like the transaction rows)
+
             Container(
               width: 30,
               height: 30,

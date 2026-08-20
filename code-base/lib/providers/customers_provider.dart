@@ -18,8 +18,6 @@ class CustomersNotifier extends StateNotifier<List<Customer>> {
     }
   }
 
-  /// Sync customers from API server into local storage.
-  /// Always replaces local data with API data (even empty) so user-switching works correctly.
   Future<void> syncFromApi() async {
     try {
       final apiCustomers = await _api.getCustomers();
@@ -34,7 +32,6 @@ class CustomersNotifier extends StateNotifier<List<Customer>> {
     final json = customer.toJson();
     json.remove('id');
 
-    // Try API first
     try {
       final apiResult = await _api.createCustomer(json);
       if (apiResult['id'] != null) {

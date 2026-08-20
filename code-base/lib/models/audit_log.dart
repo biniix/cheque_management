@@ -1,4 +1,4 @@
-/// A single activity/audit log entry, matching the `/audit-logs` API response.
+
 class AuditLog {
   final int id;
   final int? userId;
@@ -39,7 +39,6 @@ class AuditLog {
             : DateTime.now(),
       );
 
-  /// Human-friendly label for the action, e.g. "Password change".
   String get actionLabel {
     switch (action) {
       case 'login':
@@ -63,7 +62,6 @@ class AuditLog {
     }
   }
 
-  /// Human-friendly label for the entity type, e.g. "Cheque book".
   String get entityLabel {
     switch (entityType) {
       case 'auth':

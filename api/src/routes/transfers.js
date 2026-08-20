@@ -7,45 +7,6 @@ const { audit } = require('../utils/audit');
 
 router.use(auth);
 
-/**
- * @swagger
- * /transfers:
- *   post:
- *     summary: Record a transfer (money sent to a customer)
- *     tags: [Transfers]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [account_id, amount]
- *             properties:
- *               account_id:
- *                 type: integer
- *                 description: Account to transfer from
- *               customer_id:
- *                 type: integer
- *                 description: Recipient customer (optional)
- *               amount:
- *                 type: number
- *                 example: 1500
- *               date:
- *                 type: string
- *                 format: date
- *                 example: 2026-07-30
- *               description:
- *                 type: string
- *     responses:
- *       201:
- *         description: Transfer recorded
- *       404:
- *         description: Account or customer not found
- *       500:
- *         description: Server error
- */
 router.post('/', async (req, res) => {
   const conn = await db.beginTransaction();
   try {

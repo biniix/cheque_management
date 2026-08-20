@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Legacy constants — maintained for backward compatibility.
-/// New code should use `AppColors`, `AppText`, and `AppWidgets` from `design/`.
 class Constants {
   static const String appName = 'Cheque Management';
 
-  // ── Legacy color constants (delegate to AppColors) ──
   static const int primaryDark = 0xFF1A1D26;
   static const int primaryNavy = 0xFF2D3142;
   static const int accentBlue = 0xFF2563EB;
@@ -28,7 +25,6 @@ class Constants {
   static const double cardRadius = 16.0;
   static const double buttonRadius = 12.0;
 
-  // Ethiopian Banks - maps short filename to full name
   static const Map<String, String> ethiopianBanks = {
     'cbe': 'Commercial Bank of Ethiopia',
     'dashen': 'Dashen Bank',
@@ -68,7 +64,6 @@ class Constants {
   static List<String> get bankKeys => ethiopianBanks.keys.toList();
   static List<String> get bankNames => ethiopianBanks.values.toList();
 
-  /// Returns bank entries sorted alphabetically by bank name (A-Z)
   static List<MapEntry<String, String>> get sortedBankEntries {
     final entries = ethiopianBanks.entries.toList();
     entries.sort((a, b) => a.value.compareTo(b.value));
@@ -87,7 +82,6 @@ class Constants {
 
   static String getBankLogoPath(String key) => 'assets/banks/$key.png';
 
-  // ── App modules (used for employee access control) ──
   static const List<MapEntry<String, String>> modules = [
     MapEntry('home', 'Home'),
     MapEntry('accounts', 'Accounts'),
@@ -98,16 +92,13 @@ class Constants {
     MapEntry('cheques', 'Cheques'),
   ];
 
-  // ── Payment methods (used on deposit / transfer forms) ──
   static const List<MapEntry<String, String>> paymentMethods = [
     MapEntry('cash', 'Cash'),
-    MapEntry('cheque', 'Cheque'),
     MapEntry('mobile', 'Mobile (Telebirr / M-PESA)'),
     MapEntry('bank', 'Bank Transfer'),
     MapEntry('loan', 'Loan'),
   ];
 
-  /// Human-readable label for a payment method key.
   static String paymentMethodLabel(String key) {
     for (final m in paymentMethods) {
       if (m.key == key) return m.value;
@@ -116,7 +107,6 @@ class Constants {
   }
 }
 
-// Utility gradient constants
 class AppGradients {
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF2563EB), Color(0xFF60A5FA)],
@@ -137,7 +127,6 @@ class AppGradients {
   );
 }
 
-// Box shadow constants
 class AppShadows {
   static List<BoxShadow> get card => [
         BoxShadow(

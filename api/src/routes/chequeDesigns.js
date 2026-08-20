@@ -6,33 +6,6 @@ const { audit } = require('../utils/audit');
 
 router.use(auth);
 
-/** Admin-only guard — only admins may edit design templates. */
-function adminOnly(req, res, next) {
-  if (req.userRole !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Admin access required' });
-  }
-  next();
-}
-
-/**
- * @swagger
- * /cheque-designs:
- *   get:
- *     summary: List cheque design templates (any logged-in user)
- *     tags: [Cheque Designs]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: bank
- *         schema: { type: string }
- *         description: Optional bank key filter (e.g. cbe, dashen)
- *     responses:
- *       200:
- *         description: List of design templates with parsed layout
- *       500:
- *         description: Server error
- */
 router.get('/', async (req, res) => {
   try {
     const { bank } = req.query;
@@ -67,36 +40,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheque-designs:
- *   post:
- *     summary: Create or update a cheque design template (admin only)
- *     tags: [Cheque Designs]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               bank_key: { type: string }
- *               denomination: { type: string, default: '' }
- *               layout: { type: object }
- *     responses:
- *       200:
- *         description: Template updated
- *       201:
- *         description: Template created
- *       400:
- *         description: Missing bank_key or layout
- *       403:
- *         description: Admin access required
- *       500:
- *         description: Server error
- */
 router.post('/', adminOnly, async (req, res) => {
   try {
     const bankKey = String((req.body || {}).bank_key || '').trim();

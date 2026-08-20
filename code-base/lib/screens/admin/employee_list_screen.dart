@@ -126,7 +126,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Search box — handy when there are hundreds of employees
                         TextField(
                           controller: _searchCtrl,
                           onChanged: (_) => setState(() {}),
@@ -148,8 +147,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                         ),
                         const SizedBox(height: 8),
 
-                        // Lazy list — only visible rows are built, so hundreds
-                        // of employees stay smooth
                         Expanded(
                           child: _loading
                               ? const Center(child: CircularProgressIndicator())
@@ -178,8 +175,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     );
   }
 
-  /// Opens a form in the blurred popup dialog, then shows the returned
-  /// result (if any) as a toast.
   Future<void> _openEmployeeDialog(Widget form) async {
     final result = await AppWidgets.showBlurredDialog<String>(
       context,
@@ -257,7 +252,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            // Status badge (informational — no toggle)
+
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -277,7 +272,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                 ),
               ),
             ),
-            // Icon-only actions on the far right (black icons)
+
             IconButton(
               tooltip: 'View details',
               icon: const Icon(Icons.info_outline_rounded,
@@ -294,7 +289,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               constraints: const BoxConstraints(),
               padding: const EdgeInsets.all(8),
             ),
-            // Delete / remove (admin account is protected)
+
             if (!isAdmin)
               IconButton(
                 tooltip: 'Remove employee',
@@ -310,7 +305,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     );
   }
 
-  /// Shows all employee details in a dialog.
   void _showDetail(BuildContext context, Employee emp) {
     final isAdmin = emp.isAdmin;
     final modules =
@@ -328,7 +322,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header: name + employee ID badge
+
                 Row(
                   children: [
                     Expanded(

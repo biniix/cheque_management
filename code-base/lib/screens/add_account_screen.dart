@@ -48,8 +48,6 @@ class _AddAccountScreenState extends ConsumerState<AddAccountScreen> {
   }
 }
 
-/// The add-account form. Reusable: it is shown full-screen on its own route
-/// and inside the blurred popup dialog opened from the accounts/home screens.
 class AddAccountForm extends ConsumerStatefulWidget {
   const AddAccountForm({super.key});
 
@@ -90,7 +88,7 @@ class _AddAccountFormState extends ConsumerState<AddAccountForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Bank (autocomplete — custom names allowed)
+
                 BankPicker(
                   selectedBankName: _bankName,
                   onChanged: (name) => setState(() => _bankName = name),
@@ -98,7 +96,6 @@ class _AddAccountFormState extends ConsumerState<AddAccountForm> {
                 ),
                 const SizedBox(height: 20),
 
-                // Account Name
                 _buildField(
                   'Account Name',
                   _nameCtrl,
@@ -112,7 +109,6 @@ class _AddAccountFormState extends ConsumerState<AddAccountForm> {
                 ),
                 const SizedBox(height: 20),
 
-                // Account Number
                 _buildField(
                   'Account Number',
                   _numberCtrl,
@@ -126,7 +122,6 @@ class _AddAccountFormState extends ConsumerState<AddAccountForm> {
                 ),
                 const SizedBox(height: 20),
 
-                // Opening Balance
                 _buildField(
                   'Opening Balance (ETB)',
                   _balanceCtrl,
@@ -138,7 +133,6 @@ class _AddAccountFormState extends ConsumerState<AddAccountForm> {
           ),
           const SizedBox(height: 24),
 
-          // Save button
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -243,7 +237,6 @@ class _AddAccountFormState extends ConsumerState<AddAccountForm> {
     final accountsNotifier = ref.read(accountsProvider.notifier);
     final balance = double.tryParse(_balanceCtrl.text) ?? 0.0;
 
-    // Known banks keep their key (for logos); custom banks get an empty key.
     final bankKey = Constants.getBankKey(bankName) ?? '';
 
     final a = Account(

@@ -1,11 +1,5 @@
 const db = require('./db');
 
-/**
- * Write an activity/audit log entry.
- *
- * Deliberately never throws: audit failures must not break the actual
- * operation being logged, so every route can call this fire-and-forget.
- */
 async function logActivity({
   userId = null,
   userName = '',
@@ -27,13 +21,6 @@ async function logActivity({
   }
 }
 
-/**
- * Convenience wrapper that pulls the actor's identity off the Express request
- * (set by the auth middleware) and the client's IP.
- *
- * Actions: login, login_failed, logout, create, update, delete,
- * password_change, status_change
- */
 function audit(req, action, entityType, entityId, details) {
   const user = req.user || {};
   const forwarded = req.headers['x-forwarded-for'];

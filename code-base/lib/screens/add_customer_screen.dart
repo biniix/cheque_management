@@ -45,8 +45,6 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
   }
 }
 
-/// The add-customer form (name only). Reusable: it is shown full-screen on its
-/// own route and inside the blurred popup dialog opened from the customers list.
 class AddCustomerForm extends ConsumerStatefulWidget {
   const AddCustomerForm({super.key});
 
@@ -85,7 +83,6 @@ class _AddCustomerFormState extends ConsumerState<AddCustomerForm> {
           ),
           const SizedBox(height: 24),
 
-          // Save button
           SizedBox(
             width: double.infinity,
             height: 52,

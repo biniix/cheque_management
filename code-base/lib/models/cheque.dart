@@ -7,9 +7,10 @@ class Cheque {
   final String payee;
   final double amount;
   final String amountInWords;
-  final String bearerOrOrder; // 'bearer' or 'order'
+  final String bearerOrOrder;
   final bool crossed;
-  final String status; // Issued, Cleared, Stale, Void
+  final String status;
+  final bool deducted;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +26,7 @@ class Cheque {
     required this.bearerOrOrder,
     this.crossed = false,
     this.status = 'Issued',
+    this.deducted = true,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -46,6 +48,7 @@ class Cheque {
         'bearer_or_order': bearerOrOrder,
         'crossed': crossed,
         'status': status,
+        'deducted': deducted,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -62,6 +65,7 @@ class Cheque {
         bearerOrOrder: json['bearer_or_order'] as String? ?? 'bearer',
         crossed: json['crossed'] as bool? ?? false,
         status: json['status'] as String? ?? 'Issued',
+        deducted: json['deducted'] == true || json['deducted'] == 1,
         createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
         updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
       );
@@ -78,6 +82,7 @@ class Cheque {
     String? bearerOrOrder,
     bool? crossed,
     String? status,
+    bool? deducted,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) =>
@@ -93,6 +98,7 @@ class Cheque {
         bearerOrOrder: bearerOrOrder ?? this.bearerOrOrder,
         crossed: crossed ?? this.crossed,
         status: status ?? this.status,
+        deducted: deducted ?? this.deducted,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? DateTime.now(),
       );

@@ -55,8 +55,6 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
   }
 }
 
-/// The add-employee form. Reusable: it is shown full-screen on its own route
-/// and inside the blurred popup dialog opened from the employee list.
 class AddEmployeeForm extends ConsumerStatefulWidget {
   const AddEmployeeForm({super.key});
 
@@ -82,8 +80,6 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     super.dispose();
   }
 
-  /// Fill the password field with a random password that always contains
-  /// letters + digits, so the admin never has to invent one.
   void _generatePassword() {
     setState(() {
       _passwordCtrl.text = generatePassword();
@@ -251,7 +247,6 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     );
   }
 
-  /// Single module checkbox used inside the two-column module access grid.
   Widget _moduleTile(MapEntry<String, String> module) {
     return CheckboxListTile(
       value: _selectedModules.contains(module.key),

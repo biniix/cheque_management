@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'design/app_colors.dart';
-
-/// Light and dark themes for the entire app.
+import 'design/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
@@ -147,9 +145,7 @@ class AppTheme {
         labelSmall: _tryFont(fontSize: 11, fontWeight: FontWeight.w600, color: textTertiary),
       ),
     );
-  }
-
-  /// Safe font builder that falls back silently.
+  }
   static TextStyle _tryFont({
     required double fontSize,
     required FontWeight fontWeight,
@@ -172,7 +168,5 @@ class AppTheme {
       );
     }
   }
-}
-
-/// Pre-built light theme for backward compatibility.
+}
 final ThemeData lightTheme = AppTheme.light;

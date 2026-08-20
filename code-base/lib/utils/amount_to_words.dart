@@ -1,12 +1,5 @@
-/// Converts a numeric Birr amount to words, per Ethiopian cheque convention.
-///
-/// Examples:
-///   15000.50  -> "Fifteen Thousand Birr and Fifty Cents"
-///   18500.00  -> "Eighteen Thousand Five Hundred Birr"
-///   999999999.99 -> "Nine Hundred Ninety-Nine Million Nine Hundred Ninety-Nine
-///                   Thousand Nine Hundred Ninety-Nine Birr and Ninety-Nine Cents"
-///
-/// Handles amounts up to 999,999,999.99.
+
+
 String amountToWords(double amount) {
   if (amount <= 0) return 'Zero Birr';
 
@@ -22,7 +15,6 @@ String amountToWords(double amount) {
   return '$birrText and $centText';
 }
 
-/// Converts a non-negative integer to words (up to 999,999,999).
 String _numberInWords(int n) {
   if (n == 0) return 'Zero';
 

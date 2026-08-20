@@ -31,7 +31,7 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
   final _payeeCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
   DateTime _date = DateTime.now();
-  bool _crossed = true; // default to crossed
+  bool _crossed = true;
   bool _isSaving = false;
   String _amountInWords = '';
   bool _isEditMode = false;
@@ -46,7 +46,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
       await ref.read(chequeDesignsProvider.notifier).load();
       await ref.read(chequeTemplatesProvider.notifier).load();
 
-      // If editing, pre-fill form
       if (widget.editChequeId != null) {
         final cheques = ref.read(chequesProvider);
         final cheque = cheques.where((c) => c.id == widget.editChequeId).firstOrNull;
@@ -79,7 +78,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
         : null;
     if (selectedBook == null) return null;
 
-    // In edit mode, show the existing cheque's number
     if (_isEditMode && widget.editChequeId != null) {
       final existingCheque = cheques.where((c) => c.id == widget.editChequeId).firstOrNull;
       if (existingCheque != null) return existingCheque.chequeNumber;
@@ -99,7 +97,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
         ? books.where((b) => b.id == _selectedBookId).firstOrNull
         : null;
     if (selectedBook == null) return false;
-    // Exclude the current cheque being edited from the count
     var usedCount = cheques.where((c) => c.chequebookId == selectedBook.id).length;
     if (_isEditMode && widget.editChequeId != null) {
       usedCount--; // The cheque being edited counts toward the total
@@ -125,10 +122,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
     final nextNumber = _nextNumber;
     final isBookFull = _isBookFull;
 
-    // The cheque template is fetched from the persisted store as soon as a
-    // book is chosen — the exact template picked when the book was created,
-    // falling back to the bank's template. No template => no cheque can be
-    // written for that bank.
     final allTemplates = ref.watch(chequeTemplatesProvider);
     final templateEntry =
         (selectedBook != null && selectedBook.templateId != null)
@@ -181,7 +174,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Main form card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -192,7 +184,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                 child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Section: Cheque Book
                           _sectionLabel('Cheque Book'),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<int>(
@@ -247,8 +238,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Template availability — a bank without a saved
-                          // template cannot have cheques written for it.
                           if (selectedBook != null && !hasTemplate) ...[
                             Container(
                               padding: const EdgeInsets.all(14),
@@ -291,7 +280,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                             const SizedBox(height: 20),
                           ],
 
-                          // Cheque Number display
                           if (nextNumber != null) ...[
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -322,7 +310,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                             const SizedBox(height: 20),
                           ],
 
-                          // Payee
                           _sectionLabel('Payee'),
                           const SizedBox(height: 8),
                           TextFormField(
@@ -338,7 +325,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Amount
                           _sectionLabel('Amount (ETB)'),
                           const SizedBox(height: 8),
                           TextFormField(
@@ -369,7 +355,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                             },
                           ),
 
-                          // Amount in words
                           if (_amountInWords.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
@@ -401,7 +386,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                           ],
                           const SizedBox(height: 20),
 
-                          // Date
                           _sectionLabel('Date'),
                           const SizedBox(height: 8),
                           TextFormField(
@@ -455,8 +439,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                           ],
                           const SizedBox(height: 20),
 
-
-                          // Crossing - Segmented Toggle
                           _sectionLabel('Crossing'),
                           const SizedBox(height: 8),
                           Row(
@@ -486,7 +468,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Issue button
                     if (isBookFull)
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -579,7 +560,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
 
               const SizedBox(height: 24),
 
-              // Preview (below form)
               if (selectedBook != null && nextNumber != null && amount > 0) ...[
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -622,6 +602,7 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                               : '___________________________',
                           crossed: _crossed,
                           status: 'Issued',
+                          chequeNumber: nextNumber
                         )
                       else
                         ChequeLeaf(
@@ -647,7 +628,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // Balance check card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -675,7 +655,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Linked account
                     _balanceRow(
                       'Linked account',
                       account != null
@@ -684,7 +663,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Current balance
                     _balanceRow(
                       'Current balance',
                       account != null
@@ -695,7 +673,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Cheque amount
                     _balanceRow(
                       'Cheque amount',
                       amount > 0 ? 'ETB ${currencyFormat.format(amount)}' : '—',
@@ -705,7 +682,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Warning / Info
                     if (account != null && amount > 0) ...[
                       if (account.balance < amount && !_date.isAfter(DateTime.now()))
                         Container(
@@ -999,7 +975,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
     }
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // No bank template => this bank's cheques cannot be written.
     final books = ref.read(chequeBooksProvider);
     final selectedBook =
         books.where((b) => b.id == _selectedBookId).firstOrNull;
@@ -1041,7 +1016,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
     final chequeNotifier = ref.read(chequesProvider.notifier);
     final txNotifier = ref.read(transactionsProvider.notifier);
 
-    // Warn (but never block) when balance is insufficient
     if (account.balance < amount && !_date.isAfter(DateTime.now())) {
       setState(() => _isSaving = false);
       await showOverdraftWarningDialog(
@@ -1060,8 +1034,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
 
     int chequeId;
     if (_isEditMode && widget.editChequeId != null) {
-      // Edit mode: Skip transaction and balance deduction (already done on original issue)
-      // Preserve original transaction ID and just update the cheque record
       final originalCheque = ref.read(chequesProvider).where((c) => c.id == widget.editChequeId).firstOrNull;
       final originalTxId = originalCheque?.transactionId;
       await chequeNotifier.updateCheque(
@@ -1081,7 +1053,6 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
       );
       chequeId = widget.editChequeId!;
     } else {
-      // Issue new cheque — the API automatically creates the transaction and deducts balance
       final result = await chequeNotifier.addCheque(
         Cheque(
           id: 0,
@@ -1098,12 +1069,10 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
       );
       chequeId = result.chequeId;
 
-      // Save the transaction that the API created into local state
       if (result.transactionData != null) {
         await txNotifier.addTransactionFromApi(result.transactionData!);
       }
 
-      // Update local account balance to match what the API calculated
       if (result.newBalance != null) {
         await ref.read(accountsProvider.notifier).updateBalance(
               account.id,
@@ -1121,13 +1090,11 @@ class _WriteChequeScreenState extends ConsumerState<WriteChequeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
-    // Navigate to cheque detail screen using the returned ID
     navigator.pushReplacementNamed('/cheque-detail', arguments: chequeId);
   }
 
 }
 
-/// Dialog to create a new cheque book
 Future<ChequeBook?> _showCreateChequeBookDialog(
     BuildContext context, WidgetRef ref) {
   int? selectedAccountId;
@@ -1273,7 +1240,7 @@ Future<ChequeBook?> _showCreateChequeBookDialog(
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    // Sized proportionally to the leaf count (10 : 25 : 50).
+
                     children: [10, 25, 50].map((size) {
                       final isSelected = selectedSize == size;
                       return Expanded(
@@ -1440,8 +1407,6 @@ Future<ChequeBook?> _showCreateChequeBookDialog(
   );
 }
 
-/// Opens the Write Cheque form as a popup dialog (not a new tab/screen).
-/// Pass [editChequeId] to pre-fill the form for editing an existing cheque.
 Future<void> showWriteChequeDialog(
   BuildContext context, {
   int? editChequeId,

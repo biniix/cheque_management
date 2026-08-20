@@ -26,6 +26,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showBalance = true;
+  String _trendPeriod = 'weekly';
 
   @override
   void initState() {
@@ -73,6 +74,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                         if (accounts.isNotEmpty && chartData.isNotEmpty) ...[
                           _buildChart(context, chartData),
+                          const SizedBox(height: 24),
+                        ],
+                        if (accounts.isNotEmpty && transactions.isNotEmpty) ...[
+                          _buildTransactionSummary(transactions, currencyFormat),
                           const SizedBox(height: 24),
                         ],
                         if (accounts.isNotEmpty)
@@ -213,7 +218,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const Spacer(),
-          // Total money — bigger and centered in the middle of the card
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -263,15 +267,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Row with the compact total balance card and the per-bank balances panel.
-  /// The total is always computed from the same accounts shown in the panel,
-  /// so the Total Balance card and the Bank Balances total always match.
   Widget _buildBalanceOverview(BuildContext context, List<Account> accounts,
       NumberFormat currencyFormat) {
     final sortedAccounts = List<Account>.from(accounts)
       ..sort((a, b) => a.bankName.compareTo(b.bankName));
 
-    // Source of truth: sum of the exact accounts displayed in the panel.
     final panelTotal =
         sortedAccounts.fold<double>(0, (sum, a) => sum + a.balance);
 
@@ -279,8 +279,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final panel =
         _buildBankHighlights(context, sortedAccounts, currencyFormat);
 
-    // Responsive layout: side-by-side when there's room, stacked vertically on
-    // narrow windows so the content never overflows (scrolls with the page).
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 720) {
@@ -293,7 +291,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           );
         }
-        // Fixed-height card + scrollable bank list so both stay in bounds
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -306,12 +303,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// White panel listing each bank account and its current balance. The list
-  /// scrolls when there are many banks so the card stays within bounds.
   Widget _buildBankHighlights(
       BuildContext context, List<Account> accounts, NumberFormat currencyFormat) {
-    // Fixed height matching the Total Balance card, so the panel never extends
-    // past it — the bank list scrolls internally when there are many banks.
     return Container(
       height: 240,
       padding: const EdgeInsets.all(20),
@@ -346,8 +339,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          // Scrollable list — extra banks stay within bounds and can be scrolled.
-          // Scrollbar thumb is hidden so it never overlays the balance amounts.
           Expanded(
             child: ScrollConfiguration(
               behavior: ScrollConfiguration.of(context)
@@ -375,7 +366,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          // Bank logo with fallback icon
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.asset(
@@ -423,7 +413,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Amount sizes to its own content instead of being squeezed
           Text(
             _showBalance
                 ? 'ETB ${currencyFormat.format(account.balance)}'
@@ -461,9 +450,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildChart(BuildContext context, Map<int, double> chartData) {
     if (chartData.isEmpty) return const SizedBox.shrink();
 
-    // Invert X axis: key 0 (today) → right side (x=6), key 6 (6 days ago) → left side (x=0)
+    final pointCount = (_trendPeriod == 'yearly' || _trendPeriod == 'all') ? 12 : _trendPeriod == 'monthly' ? 4 : 7;
+    final maxX = (pointCount - 1).toDouble();
+
     final spots = chartData.entries.map((e) {
-      return FlSpot((6 - e.key).toDouble(), e.value);
+      return FlSpot((maxX - e.key).toDouble(), e.value);
     }).toList();
 
     if (spots.isEmpty) return const SizedBox.shrink();
@@ -498,6 +489,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: const Color(0xFF1A1D26),
                 ),
               ),
+              const Spacer(),
+              _trendTab('All', 'all'),
+              const SizedBox(width: 4),
+              _trendTab('Yearly', 'yearly'),
+              const SizedBox(width: 4),
+              _trendTab('Monthly', 'monthly'),
+              const SizedBox(width: 4),
+              _trendTab('Weekly', 'weekly'),
             ],
           ),
           const SizedBox(height: 16),
@@ -522,25 +521,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       showTitles: true,
                       reservedSize: 24,
                       getTitlesWidget: (value, meta) {
-                        final days = [
-                          'Sun',
-                          'Mon',
-                          'Tue',
-                          'Wed',
-                          'Thu',
-                          'Fri',
-                          'Sat'
-                        ];
-                        final now = DateTime.now();
                         final idx = value.toInt();
-                        if (idx < 0 || idx > 6) return const SizedBox.shrink();
-                        // idx=0 (left) = 6 days ago, idx=6 (right) = today
-                        final dayOfWeek =
-                            now.subtract(Duration(days: 6 - idx)).weekday % 7;
+                        if (idx < 0 || idx > maxX) return const SizedBox.shrink();
+                        final label = _chartLabelForIndex(idx, maxX);
                         return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            days[dayOfWeek],
+                            label,
                             style: GoogleFonts.inter(
                               fontSize: 9,
                               color: const Color(0xFF9CA3AF),
@@ -559,7 +546,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: 6,
+                maxX: maxX,
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots,
@@ -603,42 +590,119 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _trendTab(String label, String value) {
+    final selected = _trendPeriod == value;
+    return GestureDetector(
+      onTap: () => setState(() => _trendPeriod = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFEEF2FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFF6B7280),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _chartLabelForIndex(int idx, double maxX) {
+    final now = DateTime.now();
+    if (_trendPeriod == 'weekly') {
+      final days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      final dayOfWeek = now.subtract(Duration(days: maxX.toInt() - idx)).weekday % 7;
+      return days[dayOfWeek];
+    } else if (_trendPeriod == 'monthly') {
+      final weeksAgo = maxX.toInt() - idx;
+      final d = now.subtract(Duration(days: weeksAgo * 7));
+      return DateFormat('MMM d').format(d);
+    } else if (_trendPeriod == 'yearly') {
+      final monthsAgo = maxX.toInt() - idx;
+      final d = DateTime(now.year, now.month - monthsAgo, 1);
+      return DateFormat('MMM').format(d);
+    } else {
+      final monthsAgo = maxX.toInt() - idx;
+      final d = DateTime(now.year, now.month - monthsAgo, 1);
+      return DateFormat('MMM yy').format(d);
+    }
+  }
+
   Map<int, double> _buildChartData(List<Transaction> transactions) {
     final accounts = ref.read(accountsProvider);
     if (accounts.isEmpty) return {};
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final Map<int, double> dailyBalances = {};
+    final Map<int, double> dataPoints = {};
 
-    // Reconstruct each day's balance per account, then sum across accounts:
-    //   opening balance = current balance − all of the account's transactions
-    //   balance at end of day D = opening + transactions up to and including D
-    for (final account in accounts) {
-      final accTx =
-          transactions.where((t) => t.accountId == account.id).toList();
-      final totalTx = accTx.fold<double>(0, (s, t) => s + t.amount);
-      final opening = account.balance - totalTx;
+    if (_trendPeriod == 'weekly') {
+      for (final account in accounts) {
+        final accTx =
+            transactions.where((t) => t.accountId == account.id).toList();
+        final totalTx = accTx.fold<double>(0, (s, t) => s + t.amount);
+        final opening = account.balance - totalTx;
 
-      for (int i = 6; i >= 0; i--) {
-        final day = DateTime(today.year, today.month, today.day - i);
-        double dayBalance = opening;
-        for (final tx in accTx) {
-          final txDay = DateTime(tx.date.year, tx.date.month, tx.date.day);
-          if (!txDay.isAfter(day)) {
-            dayBalance += tx.amount;
+        for (int i = 6; i >= 0; i--) {
+          final day = DateTime(today.year, today.month, today.day - i);
+          double dayBalance = opening;
+          for (final tx in accTx) {
+            final txDay = DateTime(tx.date.year, tx.date.month, tx.date.day);
+            if (!txDay.isAfter(day)) dayBalance += tx.amount;
           }
+          dataPoints[i] = (dataPoints[i] ?? 0) + dayBalance;
         }
-        dailyBalances[i] = (dailyBalances[i] ?? 0) + dayBalance;
+      }
+    } else if (_trendPeriod == 'monthly') {
+      for (final account in accounts) {
+        final accTx =
+            transactions.where((t) => t.accountId == account.id).toList();
+        final totalTx = accTx.fold<double>(0, (s, t) => s + t.amount);
+        final opening = account.balance - totalTx;
+
+        for (int i = 3; i >= 0; i--) {
+          final weekEnd = today.subtract(Duration(days: i * 7));
+          double balance = opening;
+          for (final tx in accTx) {
+            final txDay = DateTime(tx.date.year, tx.date.month, tx.date.day);
+            if (!txDay.isAfter(weekEnd)) balance += tx.amount;
+          }
+          dataPoints[i] = (dataPoints[i] ?? 0) + balance;
+        }
+      }
+    } else {
+      for (final account in accounts) {
+        final accTx =
+            transactions.where((t) => t.accountId == account.id).toList();
+        final totalTx = accTx.fold<double>(0, (s, t) => s + t.amount);
+        final opening = account.balance - totalTx;
+
+        for (int i = 11; i >= 0; i--) {
+          final monthEnd = DateTime(now.year, now.month - i + 1, 0);
+          double balance = opening;
+          for (final tx in accTx) {
+            final txDay = DateTime(tx.date.year, tx.date.month, tx.date.day);
+            if (!txDay.isAfter(monthEnd)) balance += tx.amount;
+          }
+          dataPoints[i] = (dataPoints[i] ?? 0) + balance;
+        }
       }
     }
 
-    // Today's point is the actual current total, so the line always ends
-    // exactly at the Total Balance shown on the card.
     final totalBalance = accounts.fold<double>(0, (s, a) => s + a.balance);
-    dailyBalances[0] = totalBalance;
+    dataPoints[0] = totalBalance;
 
-    return dailyBalances;
+    return dataPoints;
   }
 
   bool _hasQuickActions() {
@@ -689,6 +753,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ));
     }
+
 
     if (actions.isEmpty) return const SizedBox.shrink();
 
@@ -753,6 +818,129 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionSummary(List<Transaction> transactions, NumberFormat currencyFormat) {
+    final now = DateTime.now();
+    final thisMonth = transactions.where((t) =>
+        t.date.year == now.year && t.date.month == now.month);
+    final totalIncome = thisMonth
+        .where((t) => t.amount > 0)
+        .fold<double>(0, (s, t) => s + t.amount);
+    final totalExpenses = thisMonth
+        .where((t) => t.amount < 0)
+        .fold<double>(0, (s, t) => s + t.amount.abs());
+    final txCount = thisMonth.length;
+    final transfers = thisMonth.where((t) => t.type == 'transfer').length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Monthly Summary',
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1A1D26),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                Icons.arrow_downward_rounded,
+                'Income',
+                'ETB ${currencyFormat.format(totalIncome)}',
+                const Color(0xFF10B981),
+                const Color(0xFFECFDF5),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _summaryCard(
+                Icons.arrow_upward_rounded,
+                'Expenses',
+                'ETB ${currencyFormat.format(totalExpenses)}',
+                const Color(0xFFEF4444),
+                const Color(0xFFFEF2F2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _summaryCard(
+                Icons.receipt_long_rounded,
+                'Transactions',
+                '$txCount',
+                const Color(0xFF2563EB),
+                const Color(0xFFEFF6FF),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _summaryCard(
+                Icons.swap_horiz_rounded,
+                'Transfers',
+                '$transfers',
+                const Color(0xFFF59E0B),
+                const Color(0xFFFEF3C7),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryCard(IconData icon, String label, String value,
+      Color color, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A1D26),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: const Color(0xFF9CA3AF),
+            ),
+          ),
+        ],
       ),
     );
   }

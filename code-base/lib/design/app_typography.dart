@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Typography helpers that use Plus Jakarta Sans consistently across the app.
-/// Falls back to system sans-serif if Google Fonts can't load.
 class AppText {
   AppText._();
 
@@ -35,7 +33,6 @@ class AppText {
     }
   }
 
-  // ── Headings ──
   static TextStyle h1(BuildContext context) => _tryFont(
         fontSize: 32,
         fontWeight: FontWeight.w800,
@@ -68,7 +65,6 @@ class AppText {
         color: _textPrimary(context),
       );
 
-  // ── Body ──
   static TextStyle body1(BuildContext context) => _tryFont(
         fontSize: 16,
         fontWeight: FontWeight.w400,
@@ -100,7 +96,6 @@ class AppText {
         letterSpacing: 0.5,
       );
 
-  // ── Labels ──
   static TextStyle label(BuildContext context) => _tryFont(
         fontSize: 13,
         fontWeight: FontWeight.w600,
@@ -113,7 +108,6 @@ class AppText {
         color: _textPrimary(context),
       );
 
-  // ── Numeric / Mono ──
   static TextStyle mono(BuildContext context, {double size = 14, FontWeight weight = FontWeight.w600}) {
     try {
       return GoogleFonts.inconsolata(
@@ -130,14 +124,12 @@ class AppText {
     }
   }
 
-  // ── Button ──
   static TextStyle button(BuildContext context) => _tryFont(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       );
 
-  // ── Internal helpers ──
   static Color _textPrimary(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? const Color(0xFFF1F1F6) : const Color(0xFF1A1D26);

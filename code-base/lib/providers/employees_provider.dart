@@ -12,7 +12,7 @@ class EmployeesNotifier extends StateNotifier<List<Employee>> {
       final apiEmployees = await _api.getEmployees();
       state = apiEmployees.map((j) => Employee.fromJson(j)).toList();
     } catch (_) {
-      // Admin-only endpoint — if it fails (not admin / offline), keep current state
+
     }
   }
 

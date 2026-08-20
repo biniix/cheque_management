@@ -50,8 +50,6 @@ class _EditAccountScreenState extends ConsumerState<EditAccountScreen> {
   }
 }
 
-/// The edit-account form. Reusable: shown full-screen on its own route and
-/// inside the blurred popup dialog opened from the accounts list.
 class EditAccountForm extends ConsumerStatefulWidget {
   final Account account;
 
@@ -93,7 +91,7 @@ class _EditAccountFormState extends ConsumerState<EditAccountForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bank (autocomplete — custom names allowed)
+
           BankPicker(
             selectedBankName: _bankName,
             onChanged: (name) => setState(() => _bankName = name),
@@ -101,7 +99,6 @@ class _EditAccountFormState extends ConsumerState<EditAccountForm> {
           ),
           const SizedBox(height: 20),
 
-          // Account Name
           _buildField(
             'Account Name',
             _nameCtrl,
@@ -115,7 +112,6 @@ class _EditAccountFormState extends ConsumerState<EditAccountForm> {
           ),
           const SizedBox(height: 20),
 
-          // Account Number
           _buildField(
             'Account Number',
             _numberCtrl,
@@ -129,7 +125,6 @@ class _EditAccountFormState extends ConsumerState<EditAccountForm> {
           ),
           const SizedBox(height: 20),
 
-          // Balance
           _buildField(
             'Balance (ETB)',
             _balanceCtrl,
@@ -138,7 +133,6 @@ class _EditAccountFormState extends ConsumerState<EditAccountForm> {
           ),
           const SizedBox(height: 24),
 
-          // Save button
           SizedBox(
             width: double.infinity,
             height: 52,

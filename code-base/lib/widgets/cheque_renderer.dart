@@ -7,17 +7,6 @@ import '../constants.dart';
 import '../models/cheque_template.dart';
 import '../models/cheque_template_field.dart';
 
-/// Reusable, database-driven cheque renderer.
-///
-/// Draws a [ChequeTemplate]'s background image on a Stack and places each
-/// [ChequeTemplateField] at its stored (x, y) canvas coordinates. The canvas
-/// is a fixed-size container matching `canvasWidth` x `canvasHeight` and is
-/// scaled to fit the available space via [FittedBox], so positions stay
-/// accurate on every device.
-///
-/// Used both by the admin template editor (live preview with dummy data) and
-/// the real write/preview/print screens (real data), so what the admin sees
-/// is exactly what gets produced.
 class ChequeRenderer extends StatelessWidget {
   final ChequeTemplate template;
   final List<ChequeTemplateField> fields;
@@ -31,14 +20,10 @@ class ChequeRenderer extends StatelessWidget {
   final String amountInWords;
   final String status;
   final bool crossed;
+  final String chequeNumber;
 
-  /// When true (template editor preview), empty values are replaced with
-  /// sample placeholders so the admin can judge layout and wrapping.
   final bool isPreview;
 
-  /// Template-editor support: id of the currently selected field and a tap
-  /// callback. When set, fields render a dashed blue selection box and the
-  /// canvas forwards taps so the editor can select fields directly.
   final int? selectedFieldId;
   final ValueChanged<ChequeTemplateField>? onFieldTap;
 
@@ -55,6 +40,7 @@ class ChequeRenderer extends StatelessWidget {
     this.amountInWords = '',
     this.status = 'Issued',
     this.crossed = false,
+    this.chequeNumber = '',
     this.isPreview = false,
     this.selectedFieldId,
     this.onFieldTap,
@@ -86,21 +72,17 @@ class ChequeRenderer extends StatelessWidget {
 
   Widget _background() {
     final path = template.backgroundImagePath;
-    Widget fallback = Container(
-      color: Colors.white,
-      alignment: Alignment.center,
-      child: const Icon(Icons.receipt_long_rounded,
-          size: 64, color: Color(0xFFD1D5DB)),
-    );
 
-    if (path.isEmpty) return fallback;
-
-    final Widget image = template.backgroundIsDataUri
-        ? Image.memory(_decodeDataUri(path), fit: BoxFit.fill)
-        : Image.asset(path, fit: BoxFit.fill);
+    if (path.isNotEmpty && template.backgroundIsDataUri) {
+      return Positioned.fill(
+        child: Image.memory(_decodeDataUri(path), fit: BoxFit.fill),
+      );
+    }
 
     return Positioned.fill(
-      child: image,
+      child: CustomPaint(
+        painter: _ChequeBackgroundPainter(),
+      ),
     );
   }
 
@@ -129,9 +111,15 @@ class ChequeRenderer extends StatelessWidget {
           ),
         ChequeTemplateFieldName.amountWords => _chequeLine(
             f,
-            'THE SUM OF',
+            'BIRR',
             amountInWords,
             isPreview: isPreview,
+          ),
+        ChequeTemplateFieldName.chequeNumber => _chequeLine(
+            f,
+            'CHEQUE NO',
+            chequeNumber,
+            isPreview: false,
           ),
       };
       final selectable = _selectable(f, child);
@@ -141,16 +129,14 @@ class ChequeRenderer extends StatelessWidget {
     }).toList();
   }
 
-  /// A cheque line: small uppercase label on top, then the value — or a blank
-  /// writing space when previewing an empty template. This mirrors a real
-  /// leaf ("PAY  ______", "DATE  ______", …).
   Widget _chequeLine(
     ChequeTemplateField f,
     String label,
     String value, {
     required bool isPreview,
+    String? previewValue,
   }) {
-    final effective = isPreview ? '' : value;
+    final effective = isPreview ? (previewValue ?? '') : value;
     final align = switch (f.alignment) {
       'center' => TextAlign.center,
       'right' => TextAlign.right,
@@ -165,9 +151,14 @@ class ChequeRenderer extends StatelessWidget {
     };
     final lineW = f.maxWidth ?? 260;
 
+    final crossAxisAlignment = switch (f.alignment) {
+      'center' => CrossAxisAlignment.center,
+      'right' => CrossAxisAlignment.end,
+      _ => CrossAxisAlignment.start,
+    };
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: crossAxisAlignment,
       children: [
         Text(
           label,
@@ -183,7 +174,7 @@ class ChequeRenderer extends StatelessWidget {
           width: lineW,
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: crossAxisAlignment,
             children: [
               if (effective.isNotEmpty)
                 Text(
@@ -213,9 +204,6 @@ class ChequeRenderer extends StatelessWidget {
     );
   }
 
-  /// Wraps a field's child in a Positioned at its canvas coordinates. A
-  /// [maxWidth] constraint is applied so long values (amountWords) wrap.
-  /// Converts stored Y (distance from bottom) to top-down position.
   double _topFromBottom(double y, {double? fieldHeight}) {
     final h = fieldHeight ?? 20;
     return template.canvasHeight - y - h;
@@ -240,8 +228,6 @@ class ChequeRenderer extends StatelessWidget {
     );
   }
 
-  /// Wraps a field so the editor can select it: tap-to-select plus a dashed
-  /// blue selection box with a field-name label when it is the active one.
   Widget _selectable(ChequeTemplateField f, Widget child) {
     return GestureDetector(
       onTap: onFieldTap == null ? null : () => onFieldTap!(f),
@@ -298,7 +284,6 @@ class ChequeRenderer extends StatelessWidget {
     );
   }
 
-  /// Approximate rendered size of a field, used for the selection box.
   Size _selectionSize(ChequeTemplateField f) {
     if (f.fieldType == ChequeTemplateFieldType.image) {
       return Size(f.imageWidth ?? 48, f.imageHeight ?? 48);
@@ -350,23 +335,27 @@ class ChequeRenderer extends StatelessWidget {
     final path = f.imagePath != null && f.imagePath!.isNotEmpty
         ? f.imagePath!
         : Constants.getBankLogoPath(bankKey);
-    return Image.asset(
-      path,
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFEEF2FF),
-          borderRadius: BorderRadius.circular(6),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Image.asset(
+        path,
+        width: f.imageWidth ?? 48,
+        height: f.imageHeight ?? 48,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Container(
+          width: f.imageWidth ?? 48,
+          height: f.imageHeight ?? 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Icon(Icons.account_balance_rounded,
+              size: 24, color: Color(0xFF6B7280)),
         ),
-        child: const Icon(Icons.account_balance_rounded,
-            color: Color(0xFF2563EB)),
       ),
     );
   }
 
-  /// The digital stamp is resolved dynamically from the cheque [status], never
-  /// baked into the template: issued → blue, cleared → green, void → red,
-  /// stale → amber. If the field points at a stamp image it is used instead.
   Widget _digitalStamp(ChequeTemplateField f) {
     if (f.imagePath != null && f.imagePath!.isNotEmpty) {
       return Image.asset(
@@ -415,7 +404,6 @@ class ChequeRenderer extends StatelessWidget {
     );
   }
 
-  /// Classic crossed-cheque marking: two parallel diagonal lines, top-left.
   Widget _crossedMarking() {
     return Positioned(
       top: 0,
@@ -470,7 +458,6 @@ class _CrossedLinesPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-/// Dashed blue border used to highlight the selected field in the editor.
 class _DashedBorderPainter extends CustomPainter {
   final Color color;
 
@@ -507,4 +494,126 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+class _ChequeBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final bgPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFFFEFEFE),
+          const Color(0xFFF8F9FA),
+          const Color(0xFFF5F6F8),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), bgPaint);
+
+    final borderPaint = Paint()
+      ..color = const Color(0xFFE0E3E8)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    const inset = 8.0;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(inset, inset, w - inset * 2, h - inset * 2),
+        const Radius.circular(2),
+      ),
+      borderPaint,
+    );
+
+    final cornerPaint = Paint()
+      ..color = const Color(0xFFB9BEC7)
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    const cornerSize = 14.0;
+    const cornerInset = 12.0;
+
+    canvas.drawLine(
+      Offset(cornerInset, cornerInset),
+      Offset(cornerInset, cornerInset + cornerSize),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(cornerInset, cornerInset),
+      Offset(cornerInset + cornerSize, cornerInset),
+      cornerPaint,
+    );
+
+    canvas.drawLine(
+      Offset(w - cornerInset, cornerInset),
+      Offset(w - cornerInset, cornerInset + cornerSize),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(w - cornerInset, cornerInset),
+      Offset(w - cornerInset - cornerSize, cornerInset),
+      cornerPaint,
+    );
+
+    canvas.drawLine(
+      Offset(cornerInset, h - cornerInset),
+      Offset(cornerInset, h - cornerInset - cornerSize),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(cornerInset, h - cornerInset),
+      Offset(cornerInset + cornerSize, h - cornerInset),
+      cornerPaint,
+    );
+
+    canvas.drawLine(
+      Offset(w - cornerInset, h - cornerInset),
+      Offset(w - cornerInset, h - cornerInset - cornerSize),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(w - cornerInset, h - cornerInset),
+      Offset(w - cornerInset - cornerSize, h - cornerInset),
+      cornerPaint,
+    );
+
+    final watermarkPaint = Paint()
+      ..color = const Color(0xFFF0F1F3)
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+    const spacing = 24.0;
+    for (double x = -h; x < w + h; x += spacing) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x + h, h),
+        watermarkPaint,
+      );
+    }
+
+    final accentPaint = Paint()
+      ..color = const Color(0xFFD1D5DB)
+      ..strokeWidth = 0.8;
+    canvas.drawLine(
+      Offset(inset + 4, inset + 3),
+      Offset(w - inset - 4, inset + 3),
+      accentPaint,
+    );
+
+    final micrPaint = Paint()
+      ..color = const Color(0xFFE5E7EB)
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round;
+    const dotSpacing = 4.0;
+    for (double x = inset + 20; x < w - inset - 20; x += dotSpacing * 2) {
+      canvas.drawLine(
+        Offset(x, h - inset - 6),
+        Offset(x + dotSpacing, h - inset - 6),
+        micrPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ChequeBackgroundPainter oldDelegate) => false;
 }

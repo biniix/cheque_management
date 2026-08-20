@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
 
-/// A bank field with autocomplete: as the user types, matching banks from the
-/// predefined list pop up below the field. If no known bank matches, whatever
-/// the user typed is kept — so new/custom banks can be added.
 class BankPicker extends StatefulWidget {
-  /// Currently selected/typed bank name (known or custom).
   final String? selectedBankName;
 
-  /// Called with the bank name (null when the field is emptied).
   final ValueChanged<String?> onChanged;
 
   final String label;

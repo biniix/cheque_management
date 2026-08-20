@@ -18,7 +18,6 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     }
   }
 
-  /// Sync transactions from API server into local storage.
   Future<void> syncFromApi() async {
     try {
       final apiTransactions = await _api.getTransactions();
@@ -29,11 +28,9 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     }
   }
 
-  /// Add a transaction that was already created on the API server (e.g. by writing a cheque).
-  /// This saves it to local state WITHOUT making another API call.
   Future<void> addTransactionFromApi(Map<String, dynamic> txData) async {
     final tx = Transaction.fromJson(txData);
-    // Remove from state if it already exists (deduplication)
+
     state = state.where((t) => t.id != tx.id).toList();
     state = [tx, ...state];
     await _store.saveList('transactions', state.map((t) => t.toJson()).toList());
@@ -43,7 +40,6 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     final json = transaction.toJson();
     json.remove('id');
 
-    // Try saving to API first (source of truth for ID)
     try {
       final apiResult = await _api.createTransaction(json);
       if (apiResult['id'] != null) {
@@ -51,7 +47,7 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
         if (apiResult['created_at'] != null) json['created_at'] = apiResult['created_at'];
       }
     } catch (_) {
-      // API unavailable — use local auto-increment ID
+
       json['id'] = await _store.nextId('transactions');
     }
 
@@ -61,8 +57,6 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     return json['id'] as int;
   }
 
-  /// Edit an existing transaction — syncs the change to the API (which also
-  /// adjusts the account balance) and updates local state.
   Future<void> updateTransaction(Transaction transaction) async {
     final json = transaction.toJson();
     json.remove('id');
@@ -76,19 +70,17 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
       state = state.map((t) => t.id == updated.id ? updated : t).toList();
       await _store.saveList('transactions', state.map((t) => t.toJson()).toList());
     } catch (_) {
-      // API unavailable — apply locally only
+
       state = state.map((t) => t.id == transaction.id ? transaction : t).toList();
       await _store.saveList('transactions', state.map((t) => t.toJson()).toList());
     }
   }
 
-  /// Delete a transaction — syncs to the API (which reverses the balance)
-  /// and removes it from local state.
   Future<void> deleteTransaction(int id) async {
     try {
       await _api.deleteTransaction(id);
     } catch (_) {
-      // API unavailable — delete locally only
+
     }
     state = state.where((t) => t.id != id).toList();
     await _store.saveList('transactions', state.map((t) => t.toJson()).toList());

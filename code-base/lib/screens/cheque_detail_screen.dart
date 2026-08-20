@@ -78,8 +78,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
         : null;
     final currencyFormat = NumberFormat('#,##0.00', 'en_US');
 
-    // Use the database-driven template for this bank when one exists — the
-    // exact template the book was created with, else the bank's template.
     final allTemplates = ref.watch(chequeTemplatesProvider);
     final templateEntry =
         (book != null && book.templateId != null)
@@ -106,7 +104,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // Print
           IconButton(
             icon: const Icon(Icons.print_rounded, color: Color(0xFF2563EB)),
             tooltip: 'Print',
@@ -124,7 +121,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header badge
             Row(
               children: [
                 Container(
@@ -186,7 +182,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Cheque design — template-driven when available.
             if (templateEntry != null)
               ChequeRenderer(
                 template: templateEntry.template,
@@ -200,6 +195,7 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
                 amountInWords: cheque.amountInWords,
                 crossed: cheque.crossed,
                 status: cheque.status,
+                chequeNumber: cheque.chequeNumber,
               )
             else
               ChequeLeaf(
@@ -219,7 +215,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
 
             const SizedBox(height: 24),
 
-            // Action buttons
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -241,7 +236,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      // Print
                       Expanded(
                         child: _actionButton(
                           icon: Icons.print_rounded,
@@ -256,7 +250,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Edit (only if Issued)
                       Expanded(
                         child: _actionButton(
                           icon: Icons.edit_rounded,
@@ -273,7 +266,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Status actions
                   if (cheque.status == 'Issued') ...[
                     const Divider(),
                     const SizedBox(height: 12),
@@ -302,7 +294,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
                     ),
                   ],
 
-                  // Details section
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 12),
@@ -451,7 +442,6 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
     final cheques = ref.read(chequesProvider);
     final cheque = cheques.where((c) => c.id == chequeId).firstOrNull;
 
-    // Find linked account for refund
     Account? account;
     if (cheque != null) {
       final book = books.where((b) => b.id == cheque.chequebookId).firstOrNull;
@@ -512,15 +502,12 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
     if (confirmed == true) {
       await chequesNotifier.updateStatus(chequeId, newStatus);
 
-      // When voiding, create a refund transaction record (API already refunds the balance)
-      if (isVoid && account != null && refundAmount > 0) {
-        // Update local balance immediately to match the API's refund
+      if (isVoid && account != null && refundAmount > 0 && (cheque?.deducted ?? false)) {
         await accountsNotifier.updateBalance(
           account.id,
           account.balance + refundAmount,
         );
 
-        // Create a refund transaction record
         final txNotifier = ref.read(transactionsProvider.notifier);
         await txNotifier.addTransaction(
           Transaction(
@@ -539,7 +526,9 @@ class _ChequeDetailScreenState extends ConsumerState<ChequeDetailScreen> {
           SnackBar(
             content: Text(
               isVoid
-                  ? 'Cheque voided. ETB ${currencyFormat.format(refundAmount)} refunded'
+                  ? (cheque?.deducted ?? false)
+                      ? 'Cheque voided. ETB ${currencyFormat.format(refundAmount)} refunded'
+                      : 'Cheque voided (no refund — balance was not deducted)'
                   : 'Cheque marked as $newStatus',
             ),
             backgroundColor: const Color(0xFF10B981),

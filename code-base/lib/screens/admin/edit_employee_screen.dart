@@ -59,8 +59,6 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
   }
 }
 
-/// The edit-employee form. Reusable: it is shown full-screen on its own route
-/// and inside the blurred popup dialog opened from the employee list.
 class EditEmployeeForm extends ConsumerStatefulWidget {
   final int employeeId;
 
@@ -139,9 +137,6 @@ class _EditEmployeeFormState extends ConsumerState<EditEmployeeForm> {
     super.dispose();
   }
 
-  /// Fill the reset-password field with a random password (same generator as
-  /// the add-employee form), so the admin can hand a strong password to an
-  /// employee who forgot theirs.
   void _generatePassword() {
     setState(() {
       _passwordCtrl.text = generatePassword();
@@ -162,7 +157,7 @@ class _EditEmployeeFormState extends ConsumerState<EditEmployeeForm> {
             password: _passwordCtrl.text,
             moduleAccess: _selectedModules.toList(),
           );
-      // Activate / deactivate if the status changed (admin is protected)
+
       if (emp != null && !emp.isAdmin && _isActive != emp.isActive) {
         await ref
             .read(employeesProvider.notifier)
@@ -426,7 +421,6 @@ class _EditEmployeeFormState extends ConsumerState<EditEmployeeForm> {
     );
   }
 
-  /// Single module checkbox used inside the two-column module access grid.
   Widget _moduleTile(MapEntry<String, String> module) {
     return CheckboxListTile(
       value: _selectedModules.contains(module.key),

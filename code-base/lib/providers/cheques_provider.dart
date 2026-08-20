@@ -3,7 +3,6 @@ import '../models/cheque.dart' show Cheque;
 import '../services/local_store.dart';
 import '../services/api_service.dart';
 
-/// Result returned by [ChequesNotifier.addCheque].
 class ChequeAddResult {
   final int chequeId;
   final Map<String, dynamic>? transactionData;
@@ -31,7 +30,6 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
     }
   }
 
-  /// Sync cheques from API server into local storage.
   Future<void> syncFromApi() async {
     try {
       final apiCheques = await _api.getCheques();
@@ -42,8 +40,6 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
     }
   }
 
-  /// Add a cheque by calling the API (which also creates the transaction).
-  /// Returns a [ChequeAddResult] with the generated IDs and transaction data.
   Future<ChequeAddResult> addCheque(Cheque cheque) async {
     final json = cheque.toJson();
     json.remove('id');
@@ -52,7 +48,6 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
     Map<String, dynamic>? transactionData;
     double? newBalance;
 
-    // Try saving to API first (source of truth for IDs)
     try {
       final apiResult = await _api.writeCheque(json);
       final apiCheque = apiResult['data']?['cheque'] as Map<String, dynamic>?;
@@ -68,7 +63,7 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
         if (apiCheque['updated_at'] != null) json['updated_at'] = apiCheque['updated_at'];
       }
     } catch (_) {
-      // API unavailable — use local auto-increment ID
+
       json['id'] = await _store.nextId('cheques');
     }
 
@@ -83,11 +78,11 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
   }
 
   Future<void> updateStatus(int id, String status) async {
-    // Try updating on API server first
+
     try {
       await _api.updateChequeStatus(id, status);
     } catch (_) {
-      // API unavailable — update locally only
+
     }
 
     final updatedList = state.map((c) {
@@ -104,7 +99,6 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
     state = updatedList;
   }
 
-  /// Get the next unused cheque number for a cheque book
   Future<String> getNextNumber(int chequebookId, String startNumber) async {
     final chequesForBook = state.where((c) => c.chequebookId == chequebookId).toList();
     final usedCount = chequesForBook.length;
@@ -129,7 +123,6 @@ class ChequesNotifier extends StateNotifier<List<Cheque>> {
     return filtered;
   }
 
-  /// Check stale cheques and update their status
   void checkStaleCheques() {
     final updatedList = state.map((c) {
       if (c.isStale && c.status != 'Void' && c.status != 'Cleared') {

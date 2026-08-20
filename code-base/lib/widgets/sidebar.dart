@@ -15,14 +15,12 @@ import '../screens/admin/audit_logs_screen.dart';
 import '../screens/template_editor_screen.dart';
 import '../screens/template_list_screen.dart';
 
-/// Floating white sidebar card with blue accent — minimal, grouped sections.
 class Sidebar extends ConsumerWidget {
   final String currentRoute;
   final void Function(int index)? onNavigate;
 
   const Sidebar({super.key, required this.currentRoute, this.onNavigate});
 
-  // ── Route mapping (maintains original functionality) ──
   static const _allRoutes = [
     '/home',
     '/accounts',
@@ -34,20 +32,17 @@ class Sidebar extends ConsumerWidget {
     '/postponed-cheques',
   ];
 
-  // ── All navigation items as a flat list ──
-  // Each item maps to a module key used for employee access control.
   static const _navItems = [
     _NavItem('Home', Icons.home_outlined, 0, 'home'),
     _NavItem('Accounts', Icons.account_balance_outlined, 1, 'accounts'),
     _NavItem('Customers', Icons.people_outlined, 2, 'customers'),
     _NavItem('Transfers', Icons.north_east_rounded, 3, 'transfers'),
     _NavItem('Deposits', Icons.south_west_rounded, 4, 'deposits'),
-    _NavItem('Cheques', Icons.check_circle_outlined, 5, 'cheques'),
+    _NavItem('Cheques', Icons.payments_rounded, 5, 'cheques'),
     _NavItem('Transactions', Icons.receipt_long_outlined, 6, 'transactions'),
-    _NavItem('Postponed Cheques', Icons.event_available_outlined, 7, 'cheques'),
+    _NavItem('Post-dated Cheques', Icons.event_available_outlined, 7, 'cheques'),
   ];
 
-  // ── Admin nav items (shown only to admins) ──
   static const _adminItems = [
     _NavItem('Employees', Icons.group_outlined, 0, 'admin',
         route: '/admin/employees'),
@@ -68,7 +63,7 @@ class Sidebar extends ConsumerWidget {
       case '/transactions':
         return const TransactionsScreen();
       case '/postponed-cheques':
-        return const PostponedChequesScreen();
+        return const PostDatedChequesScreen();
       case '/transfer':
         return const TransferScreen();
       case '/deposit':
@@ -94,9 +89,6 @@ class Sidebar extends ConsumerWidget {
     final userName = authState.userName ?? 'User';
     final employeeId = authState.employeeId ?? '';
 
-    // Admins see every module, plus the dedicated admin section below.
-    // Everyone else sees exactly the modules they were granted — no implicit
-    // extras (e.g. 'transactions' no longer implies Transfers/Deposits).
     final visibleItems = authState.isAdmin
         ? _navItems
         : _navItems
@@ -120,18 +112,15 @@ class Sidebar extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            // ── Scrollable nav area ──
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo
                     _buildLogo(),
                     const SizedBox(height: 28),
 
-                    // Admin section (top, admins only)
                     if (authState.isAdmin) ...[
                       _sectionLabel('ADMIN'),
                       ..._adminItems.map((item) {
@@ -150,7 +139,6 @@ class Sidebar extends ConsumerWidget {
                       const SizedBox(height: 20),
                     ],
 
-                    // Workspace section (admins see all, others filtered by access)
                     if (visibleItems.isNotEmpty) _sectionLabel('WORKSPACE'),
                     ...visibleItems.map((item) {
                       final route = _allRoutes[item.index];
@@ -169,7 +157,6 @@ class Sidebar extends ConsumerWidget {
               ),
             ),
 
-            // ── Bottom: User profile ──
             _buildUserProfile(context, ref, userName, employeeId),
           ],
         ),
@@ -177,14 +164,13 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  // ── Logo text (no image) ──
   Widget _buildLogo() {
     return Text(
       'Cheque Management',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: GoogleFonts.inter(
-        fontSize: 19,
+        fontSize: 17,
         fontWeight: FontWeight.w800,
         color: const Color(0xFF1F2937),
         letterSpacing: -0.4,
@@ -192,7 +178,6 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  // ── Section header (ADMIN / WORKSPACE) ──
   Widget _sectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 10, bottom: 8),
@@ -208,7 +193,6 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  // ── Nav item (blue active state with hover effects) ──
   Widget _buildNavItem(
     BuildContext context,
     IconData icon,
@@ -234,7 +218,6 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  // ── User profile at bottom ──
   Widget _buildUserProfile(
       BuildContext context, WidgetRef ref, String userName, String employeeId) {
     return Container(
@@ -261,7 +244,6 @@ class Sidebar extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                // Avatar initial with blue bg
                 Container(
                   width: 28,
                   height: 28,
@@ -322,7 +304,6 @@ class Sidebar extends ConsumerWidget {
   }
 }
 
-// ── Nav item (no hover effect) ──
 class _SidebarNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -356,7 +337,6 @@ class _SidebarNavItem extends StatelessWidget {
             if (onNavigate != null) {
               onNavigate!(index);
             } else if (admin || route == '/transfer' || route == '/deposit') {
-              // Admin & form screens push on top so back button works
               Navigator.pushNamed(context, route);
             } else {
               Navigator.pushReplacement(
@@ -403,7 +383,6 @@ class _NavItem {
   final int index;
   final String module;
 
-  /// Explicit route for admin nav items (normal items derive it from [index]).
   final String? route;
 
   const _NavItem(this.label, this.icon, this.index, this.module,

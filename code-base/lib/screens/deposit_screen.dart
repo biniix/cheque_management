@@ -73,7 +73,6 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Account
                                     Text(
                                       'Account',
                                       style: GoogleFonts.inter(
@@ -117,7 +116,6 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Amount
                                     _buildField(
                                       'Amount (ETB)',
                                       _amountCtrl,
@@ -136,9 +134,8 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Payment method
                                     Text(
-                                      'Payment Method',
+                                      'Payment Type',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -154,7 +151,6 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Description
                                     _buildField(
                                       'Description (optional)',
                                       _descCtrl,
@@ -162,7 +158,6 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Date
                                     Text(
                                       'Date',
                                       style: GoogleFonts.inter(
@@ -211,7 +206,6 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Save
                               SizedBox(
                                 width: double.infinity,
                                 height: 46,

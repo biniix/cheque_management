@@ -6,31 +6,6 @@ const { audit } = require('../utils/audit');
 
 router.use(auth);
 
-/** Helper: fetch a transaction with its account info (shared ledger). */
-async function getUserTransaction(txnId) {
-  return db.get(
-    `SELECT t.*, a.bank_name, a.account_name
-     FROM transactions t
-     JOIN accounts a ON t.account_id = a.id
-     WHERE t.id = ?`,
-    [txnId]
-  );
-}
-
-/**
- * @swagger
- * /transactions:
- *   get:
- *     summary: List all transactions (shared company ledger)
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of transactions
- *       500:
- *         description: Server error
- */
 router.get('/', async (req, res) => {
   try {
     const transactions = await db.all(
@@ -45,48 +20,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /transactions:
- *   post:
- *     summary: Save a transaction to the server
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [account_id, type, amount, date]
- *             properties:
- *               account_id:
- *                 type: integer
- *               type:
- *                 type: string
- *                 example: deposit
- *               amount:
- *                 type: number
- *                 example: 5000
- *               date:
- *                 type: string
- *                 format: date
- *                 example: 2026-07-30
- *               payee:
- *                 type: string
- *               description:
- *                 type: string
- *               reference_no:
- *                 type: string
- *     responses:
- *       201:
- *         description: Transaction created
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
 router.post('/', async (req, res) => {
   const conn = await db.beginTransaction();
   try {
@@ -115,9 +48,6 @@ router.post('/', async (req, res) => {
       ]
     );
 
-    // Keep the account balance in sync with the transaction (deposits add,
-    // debit transactions subtract). Without this the balance is stale after a
-    // restart, which breaks the balance trend chart and the total balance.
     const newBalance = parseFloat(account.balance) + signedAmount;
     await conn.query('UPDATE accounts SET balance = ? WHERE id = ?', [newBalance, account_id]);
 
@@ -135,48 +65,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /transactions/{id}:
- *   put:
- *     summary: Edit a transaction (updates account balance accordingly)
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               type:
- *                 type: string
- *               amount:
- *                 type: number
- *               date:
- *                 type: string
- *                 format: date
- *               payee:
- *                 type: string
- *               description:
- *                 type: string
- *     responses:
- *       200:
- *         description: Transaction updated
- *       400:
- *         description: Cannot edit cheque-linked transactions
- *       404:
- *         description: Transaction not found
- *       500:
- *         description: Server error
- */
 router.put('/:id', async (req, res) => {
   const conn = await db.beginTransaction();
   try {
@@ -185,7 +73,6 @@ router.put('/:id', async (req, res) => {
       await db.rollback(conn);
       return res.status(404).json({ success: false, message: 'Transaction not found' });
     }
-    // Cheque-linked transactions are managed through the cheques module
     const linked = await conn.query('SELECT id FROM cheques WHERE transaction_id = ?', [txn.id]);
     if (linked[0].length > 0) {
       await db.rollback(conn);
@@ -203,7 +90,6 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
     }
 
-    // Preserve the sign convention of the transaction type
     let signedAmount = newAmount;
     if (txn.type === 'transfer' || txn.type === 'cheque_issued') {
       signedAmount = -newAmount;
@@ -249,30 +135,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /transactions/{id}:
- *   delete:
- *     summary: Delete a transaction (reverses the balance change)
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Transaction deleted
- *       400:
- *         description: Cannot delete cheque-linked transactions
- *       404:
- *         description: Transaction not found
- *       500:
- *         description: Server error
- */
 router.delete('/:id', async (req, res) => {
   const conn = await db.beginTransaction();
   try {
@@ -281,7 +143,6 @@ router.delete('/:id', async (req, res) => {
       await db.rollback(conn);
       return res.status(404).json({ success: false, message: 'Transaction not found' });
     }
-    // Cheque-linked transactions are managed through the cheques module
     const linked = await conn.query('SELECT id FROM cheques WHERE transaction_id = ?', [txn.id]);
     if (linked[0].length > 0) {
       await db.rollback(conn);
@@ -294,8 +155,6 @@ router.delete('/:id', async (req, res) => {
     const [accounts] = await conn.query('SELECT * FROM accounts WHERE id = ?', [txn.account_id]);
     const account = accounts[0];
     if (account) {
-      // Reverse the effect: deleting a deposit removes it from the balance, deleting a
-      // transfer/cheque adds it back.
       const newBalance = parseFloat(account.balance) - parseFloat(txn.amount);
       await conn.query('UPDATE accounts SET balance = ? WHERE id = ?', [newBalance, txn.account_id]);
     }

@@ -1,6 +1,5 @@
 class NumberToWords {
-  /// Converts a numeric amount to English words for cheque writing.
-  /// E.g., 18500.50 -> "ETB Eighteen Thousand Five Hundred and 50/100 Only"
+
   static String convert(double amount) {
     if (amount == 0) return 'Zero';
 

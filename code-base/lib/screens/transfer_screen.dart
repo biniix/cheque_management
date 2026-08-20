@@ -84,7 +84,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Account
                                     Text(
                                       'From Account',
                                       style: GoogleFonts.inter(
@@ -128,7 +127,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Customer toggle
                                     Text(
                                       'Payee',
                                       style: GoogleFonts.inter(
@@ -221,7 +219,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                     ),
                                     const SizedBox(height: 8),
 
-                                    // Payee field
                                     if (_useExistingCustomer &&
                                         customers.isNotEmpty)
                                       DropdownButtonFormField<int>(
@@ -267,7 +264,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                       ),
                                     const SizedBox(height: 14),
 
-                                    // Amount
                                     _buildField(
                                       'Amount (ETB)',
                                       _amountCtrl,
@@ -286,9 +282,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Payment method
                                     Text(
-                                      'Payment Method',
+                                      'Payment Type',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -304,7 +299,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Date
                                     Text(
                                       'Date',
                                       style: GoogleFonts.inter(
@@ -350,7 +344,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Description
                                     _buildField(
                                       'Description (optional)',
                                       _descCtrl,
@@ -361,7 +354,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Save
                               SizedBox(
                                 width: double.infinity,
                                 height: 46,
@@ -487,7 +479,6 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     final accounts = ref.read(accountsProvider);
     final account = accounts.firstWhere((a) => a.id == _selectedAccountId);
 
-    // Check balance
     if (account.balance < amount) {
       messenger.showSnackBar(
         const SnackBar(

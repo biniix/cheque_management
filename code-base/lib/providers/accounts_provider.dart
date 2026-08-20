@@ -9,36 +9,31 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
 
   AccountsNotifier(this._store) : super([]);
 
-  /// Load from local storage (fast, offline-first)
   Future<void> load() async {
     try {
       final jsonList = await _store.getAll('accounts');
       state = jsonList.map((j) => Account.fromJson(j)).toList();
     } catch (_) {
-      // If local data is corrupted, reset
+
       state = [];
     }
   }
 
-  /// Sync accounts from API server into local storage.
-  /// Always replaces local data with API data (even empty) so user-switching works correctly.
   Future<void> syncFromApi() async {
     try {
       final apiAccounts = await _api.getAccounts();
       await _store.saveList('accounts', apiAccounts);
       state = apiAccounts.map((j) => Account.fromJson(j)).toList();
     } catch (_) {
-      // API unavailable or parse error — fall back to local data
+
       await load();
     }
   }
 
-  /// Save to BOTH API server and local storage
   Future<void> addAccount(Account account) async {
     final json = account.toJson();
     json.remove('id');
 
-    // Try saving to API first (source of truth for ID)
     try {
       final apiResult = await _api.createAccount(json);
       if (apiResult['id'] != null) {
@@ -47,7 +42,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
         if (apiResult['updated_at'] != null) json['updated_at'] = apiResult['updated_at'];
       }
     } catch (_) {
-      // API unavailable — use local auto-increment ID
+
       json['id'] = await _store.nextId('accounts');
     }
 
@@ -58,7 +53,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   }
 
   Future<void> updateAccount(Account account) async {
-    // Try updating on API
+
     try {
       await _api.updateAccount(account.id, account.toJson());
     } catch (_) {}
@@ -69,7 +64,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   }
 
   Future<void> deleteAccount(int id) async {
-    // Try deleting from API
+
     try {
       await _api.deleteAccount(id);
     } catch (_) {}
@@ -96,13 +91,10 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     await _store.saveList('accounts', updatedList.map((a) => a.toJson()).toList());
     state = updatedList;
 
-    // Keep the server balance in sync too, so the balance isn't stale after an
-    // app restart / re-sync (which previously broke the balance trend chart).
     try {
       await _api.updateAccount(id, {'balance': newBalance});
     } catch (_) {
-      // Offline / API unavailable — local change is saved and the API endpoints
-      // (deposit/transfer/cheque) already update the server balance.
+
     }
   }
 

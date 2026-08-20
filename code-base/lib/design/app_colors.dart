@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Central color palette for the entire app.
-/// Provides the same semantic colors in both light and dark variants.
 class AppColors {
   AppColors._();
 
-  // ── Brand ──
   static const Color primary = Color(0xFF2563EB);
   static const Color primaryLight = Color(0xFF60A5FA);
   static const Color primaryDark = Color(0xFF1D4ED8);
 
-  // ── Neutrals (light) ──
   static const Color bgLight = Color(0xFFF5F7FA);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color textPrimaryLight = Color(0xFF1A1D26);
@@ -22,7 +18,6 @@ class AppColors {
   static const Color fieldBgLight = Color(0xFFF5F7FA);
   static const Color chipBgLight = Color(0xFFF5F7FA);
 
-  // ── Neutrals (dark) ──
   static const Color bgDark = Color(0xFF0F1118);
   static const Color surfaceDark = Color(0xFF1A1D28);
   static const Color textPrimaryDark = Color(0xFFF1F1F6);
@@ -32,7 +27,6 @@ class AppColors {
   static const Color fieldBgDark = Color(0xFF242736);
   static const Color chipBgDark = Color(0xFF242736);
 
-  // ── Status ──
   static const Color success = Color(0xFF10B981);
   static const Color successBg = Color(0xFFD1FAE5);
   static const Color successText = Color(0xFF065F46);
@@ -51,12 +45,10 @@ class AppColors {
   static const Color warningDark = Color(0xFFFBBF24);
   static const Color warningBgDark = Color(0xFF78350F);
 
-  // ── Misc ──
   static const Color info = Color(0xFF2563EB);
   static const Color infoBg = Color(0xFFEEF2FF);
   static const Color infoBgDark = Color(0xFF1E3A5F);
 
-  // ── Semantic getters (context-aware) ──
   static Color of(BuildContext context, {required Color light, required Color dark}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? dark : light;
@@ -79,7 +71,6 @@ class AppColors {
   static Color chipBg(BuildContext context) =>
       of(context, light: chipBgLight, dark: chipBgDark);
 
-  // ── Semantic status colors ──
   static Color successOf(BuildContext context, {bool bg = false, bool text = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (bg) return isDark ? successBgDark : successBg;
@@ -107,7 +98,6 @@ class AppColors {
     return primary;
   }
 
-  // ── Status helpers (without context — for widgets that pass color directly) ──
   static Color statusBg(String status, BuildContext context) {
     switch (status) {
       case 'Issued':

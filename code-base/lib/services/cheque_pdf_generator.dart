@@ -9,14 +9,8 @@ import '../constants.dart';
 import '../models/cheque_template.dart';
 import '../models/cheque_template_field.dart';
 
-/// Generates a print-accurate PDF for a [ChequeTemplate].
-///
-/// Unlike the on-screen renderer this builds the page directly from the
-/// stored field coordinates (canvas px → PDF points), so MICR lines and stamp
-/// placement keep millimeter-level accuracy.
 class ChequePdfGenerator {
-  /// Canvas pixels are treated as CSS px at 96 dpi; PDF points are 1/72".
-  static const double pxToPt = 72 / 96; // 0.75
+  static const double pxToPt = 72 / 96;
 
   static const Map<String, String> _statusText = {
     'Cleared': 'CLEARED',
@@ -36,6 +30,7 @@ class ChequePdfGenerator {
     String amountInWords = '',
     String status = 'Issued',
     bool crossed = false,
+    String chequeNumber = '',
   }) async {
     final widthPt = template.canvasWidth * pxToPt;
     final heightPt = template.canvasHeight * pxToPt;
@@ -47,13 +42,11 @@ class ChequePdfGenerator {
 
     pdf.addPage(
       pw.Page(
-        // Page exactly matches the canvas, so positioned fields map 1:1.
         pageFormat: PdfPageFormat(widthPt, heightPt),
         margin: pw.EdgeInsets.zero,
         build: (_) {
           return pw.Stack(
             children: [
-              // ── Background (fills the whole canvas) ──
               pw.Positioned.fill(
                 child: background != null
                     ? pw.Image(background, fit: pw.BoxFit.fill)
@@ -61,7 +54,6 @@ class ChequePdfGenerator {
               ),
               if (crossed) _crossedMarking(),
 
-              // ── Positioned fields ──
               ...fields.map((f) => _buildField(
                     f,
                     template: template,
@@ -74,6 +66,7 @@ class ChequePdfGenerator {
                     amountInWords: amountInWords,
                     status: status,
                     bankLogo: bankLogo,
+                    chequeNumber: chequeNumber,
                   )),
             ],
           );
@@ -96,9 +89,9 @@ class ChequePdfGenerator {
     required String amountInWords,
     required String status,
     required pw.ImageProvider? bankLogo,
+    String chequeNumber = '',
   }) {
     final left = f.x * pxToPt;
-    // Y is stored as distance from bottom; convert to top-down for PDF.
     final fieldH = f.fieldType == ChequeTemplateFieldType.image
         ? (f.imageHeight ?? 44)
         : 40.0;
@@ -139,12 +132,9 @@ class ChequePdfGenerator {
           'ETB ${NumberFormat('#,##0.00', 'en_US').format(amount)}',
         );
       case ChequeTemplateFieldName.amountWords:
-        return _positionedText(
-          f,
-          left,
-          top,
-          amountInWords.isNotEmpty ? amountInWords : '___________________________',
-        );
+        return _pdfChequeLine(f, left, top, 'BIRR', amountInWords.isNotEmpty ? amountInWords : '___________________________');
+      case ChequeTemplateFieldName.chequeNumber:
+        return _pdfChequeLine(f, left, top, 'CHEQUE NO', chequeNumber.isNotEmpty ? chequeNumber : '000001');
     }
   }
 
@@ -179,6 +169,72 @@ class ChequePdfGenerator {
       left: left,
       top: top,
       child: width != null ? pw.SizedBox(width: width, child: child) : child,
+    );
+  }
+
+  pw.Widget _pdfChequeLine(
+    ChequeTemplateField f,
+    double left,
+    double top,
+    String label,
+    String value,
+  ) {
+    final width = f.maxWidth != null ? f.maxWidth! * pxToPt : null;
+    final fontSize = (f.fontSize ?? 13) * pxToPt;
+    return pw.Positioned(
+      left: left,
+      top: top,
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              fontSize: fontSize * 0.62,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey500,
+              letterSpacing: 0.6,
+            ),
+          ),
+          pw.SizedBox(height: 1),
+          pw.SizedBox(
+            width: width,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                if (value.isNotEmpty)
+                  pw.Text(
+                    value,
+                    textAlign: switch (f.alignment) {
+                      'center' => pw.TextAlign.center,
+                      'right' => pw.TextAlign.right,
+                      _ => pw.TextAlign.left,
+                    },
+                    style: pw.TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: switch (f.fontWeight) {
+                        'w500' => pw.FontWeight.normal,
+                        'w600' => pw.FontWeight.normal,
+                        'w700' => pw.FontWeight.bold,
+                        'bold' => pw.FontWeight.bold,
+                        _ => pw.FontWeight.normal,
+                      },
+                      fontStyle: f.italic ? pw.FontStyle.italic : pw.FontStyle.normal,
+                      color: _fieldColor(f),
+                    ),
+                  ),
+                pw.Container(
+                  width: width,
+                  height: 1,
+                  color: PdfColors.grey400,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -276,7 +332,6 @@ class ChequePdfGenerator {
     }
   }
 
-  /// Lighten a color toward white (pdf colors are opaque) for stamp fill.
   static PdfColor _blendWhite(PdfColor color, double blend) {
     int mix(double c) => (c + (255 - c) * blend).round().clamp(0, 255).toInt();
     return PdfColor.fromInt(

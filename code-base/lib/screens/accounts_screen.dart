@@ -27,8 +27,6 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     Future.microtask(() => ref.read(accountsProvider.notifier).load());
   }
 
-  /// Opens the add-account form in the blurred popup dialog, then shows the
-  /// returned result (if any) as a toast.
   Future<void> _openAddAccount() async {
     final result = await AppWidgets.showBlurredDialog<String>(
       context,
@@ -40,7 +38,6 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     }
   }
 
-  /// Opens the edit-account form (prefilled) in the blurred popup dialog.
   Future<void> _openEditAccount(Account account) async {
     final result = await AppWidgets.showBlurredDialog<String>(
       context,
@@ -52,7 +49,6 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     }
   }
 
-  /// Asks for confirmation, then deletes the account and its transactions.
   Future<void> _confirmDeleteAccount(
       BuildContext context, Account account) async {
     final confirmed = await AppWidgets.confirmDialog(
@@ -79,7 +75,6 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     }
   }
 
-  /// Opens the audit trail for this specific account (admin only).
   void _showAccountAudit(Account account) {
     final label = account.accountName.isNotEmpty
         ? '${account.bankName} · ${account.accountName}'
@@ -115,7 +110,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Add button
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -179,7 +174,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           ),
           borderRadius: BorderRadius.circular(14),
           child: Container(
-            // Compact box — just enough padding to fit the single row
+
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -188,7 +183,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
             ),
             child: Row(
               children: [
-                // Bank name + account name side by side
+
                 Expanded(
                   child: Row(
                     children: [
@@ -238,7 +233,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Account number — tap to copy
+
                 GestureDetector(
                   onTap: () {
                     Clipboard.setData(
@@ -274,7 +269,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Balance + eye button next to it
+
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

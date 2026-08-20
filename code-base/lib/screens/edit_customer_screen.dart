@@ -47,8 +47,6 @@ class _EditCustomerScreenState extends ConsumerState<EditCustomerScreen> {
   }
 }
 
-/// The edit-customer form (name only). Reusable: shown full-screen on its own
-/// route and inside the blurred popup dialog opened from the customers list.
 class EditCustomerForm extends ConsumerStatefulWidget {
   final Customer customer;
 
@@ -136,7 +134,6 @@ class _EditCustomerFormState extends ConsumerState<EditCustomerForm> {
           ),
           const SizedBox(height: 24),
 
-          // Save button
           SizedBox(
             width: double.infinity,
             height: 52,

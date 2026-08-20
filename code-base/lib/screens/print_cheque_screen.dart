@@ -44,8 +44,6 @@ class PrintChequeScreen extends ConsumerWidget {
         ? accounts.where((a) => a.id == book.accountId).firstOrNull
         : null;
 
-    // Template-driven print — the exact template the book was created with,
-    // else the bank's saved template.
     final allTemplates = ref.watch(chequeTemplatesProvider);
     final templateEntry =
         (book != null && book.templateId != null)
@@ -84,7 +82,6 @@ class PrintChequeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header badge
             Row(
               children: [
                 Container(
@@ -134,7 +131,6 @@ class PrintChequeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // Same design as the preview — template-driven when available.
             if (templateEntry != null)
               ChequeRenderer(
                 template: templateEntry.template,
@@ -148,6 +144,7 @@ class PrintChequeScreen extends ConsumerWidget {
                 amountInWords: cheque.amountInWords,
                 crossed: cheque.crossed,
                 status: cheque.status,
+                chequeNumber: cheque.chequeNumber,
               )
             else
               ChequeLeaf(
@@ -175,8 +172,6 @@ class PrintChequeScreen extends ConsumerWidget {
       WidgetRef ref,
       Cheque cheque,
       Account? acc) async {
-    // Template-driven PDF uses the same stored field positions as the
-    // on-screen renderer, so print output matches the preview exactly.
     final allTemplates = ref.read(chequeTemplatesProvider);
     final book = ref
         .read(chequeBooksProvider)
@@ -201,13 +196,13 @@ class PrintChequeScreen extends ConsumerWidget {
         amountInWords: cheque.amountInWords,
         crossed: cheque.crossed,
         status: cheque.status,
+        chequeNumber: cheque.chequeNumber,
       );
     }
 
     final dateFormat = DateFormat('dd/MM/yyyy');
     final currencyFormat = NumberFormat('#,##0.00', 'en_US');
 
-    // Try to load bank logo
     pw.ImageProvider? logoImage;
     if (acc != null && acc.bankKey.isNotEmpty) {
       try {
@@ -230,14 +225,12 @@ class PrintChequeScreen extends ConsumerWidget {
               pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Header - Bank Logo + Name & Cheque Number (matching ChequeLeaf)
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
                   pw.Row(
                     children: [
-                      // Bank logo
                       if (logoImage != null)
                         pw.Container(
                           width: 36,
@@ -283,7 +276,7 @@ class PrintChequeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  // Cheque number
+
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
@@ -308,22 +301,18 @@ class PrintChequeScreen extends ConsumerWidget {
                 ],
               ),
 
-              // Divider
               pw.SizedBox(height: 12),
               pw.Divider(height: 1, color: PdfColors.grey200),
               pw.SizedBox(height: 12),
 
-              // Date line (matching ChequeLine style)
               _pdfChequeLine('DATE', dateFormat.format(cheque.date)),
               pw.SizedBox(height: 6),
 
-              // Payee line — show exactly what was entered (e.g. "Biniyam Teklu")
               _pdfChequeLine('PAY', cheque.payee),
               pw.SizedBox(height: 6),
 
-              // Amount in words
               _pdfChequeLine(
-                'THE SUM OF',
+                'BIRR',
                 cheque.amountInWords.isNotEmpty
                     ? cheque.amountInWords
                     : '___________________________',
@@ -331,7 +320,6 @@ class PrintChequeScreen extends ConsumerWidget {
 
               pw.SizedBox(height: 10),
 
-              // Amount in figures (right-aligned box)
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Container(
@@ -355,12 +343,11 @@ class PrintChequeScreen extends ConsumerWidget {
               pw.Divider(height: 1, color: PdfColors.grey200),
               pw.SizedBox(height: 10),
 
-              // Footer: account details + crossing + digital stamp
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  // Account info and crossing
+
                   pw.Expanded(
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -391,7 +378,6 @@ class PrintChequeScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  // Digital stamp (replaces signature)
                   if (cheque.status == 'Issued')
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(
@@ -430,7 +416,6 @@ class PrintChequeScreen extends ConsumerWidget {
 
               pw.SizedBox(height: 8),
 
-              // Status pill
               pw.Container(
                 padding:
                     const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -450,8 +435,6 @@ class PrintChequeScreen extends ConsumerWidget {
             ],
               ),
 
-              // Crossed-cheque marking: two parallel diagonal lines, top-left
-              // (matches the on-screen leaf)
               if (cheque.crossed)
                 pw.Align(
                   alignment: pw.Alignment.topLeft,
@@ -469,7 +452,7 @@ class PrintChequeScreen extends ConsumerWidget {
                       final dy = ey - sy;
                       final len = math.sqrt(dx * dx + dy * dy);
                       if (len == 0) return;
-                      // Perpendicular offset keeps the second line parallel.
+
                       final px = (-dy / len) * 16;
                       final py = (dx / len) * 16;
                       canvas
@@ -571,6 +554,5 @@ class PrintChequeScreen extends ConsumerWidget {
       }
     }
   }
-
 
 }

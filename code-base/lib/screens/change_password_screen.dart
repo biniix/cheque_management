@@ -5,8 +5,6 @@ import '../providers/auth_provider.dart';
 import '../design/app_colors.dart';
 import '../services/api_service.dart';
 
-/// Shown right after login when the user is still on the admin-given password.
-/// They must pick their own before using the app (back navigation is blocked).
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
@@ -30,7 +28,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   @override
   void initState() {
     super.initState();
-    // Live-revalidate the strength checklist as the user types.
+
     _newCtrl.addListener(_onNewPasswordChanged);
   }
 
@@ -93,7 +91,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // Password change is mandatory — block system back / Android back button.
+
       canPop: false,
       child: Scaffold(
         backgroundColor: AppColors.bg(context),
@@ -280,8 +278,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     );
   }
 
-  /// Live password-strength checklist under the New password field.
-  /// Gray while untouched → red until every requirement is met → green once met.
   Widget _buildRequirements() {
     final untouched = _newCtrl.text.isEmpty;
     final met = _newPasswordSatisfied;

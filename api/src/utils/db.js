@@ -8,7 +8,7 @@ function getPool() {
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'cheque_management_db',
+      database: process.env.DB_NAME || 'database',
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
@@ -52,7 +52,6 @@ async function run(sql, params = []) {
   }
 }
 
-// Transaction support
 async function beginTransaction() {
   const conn = await getPool().getConnection();
   await conn.beginTransaction();

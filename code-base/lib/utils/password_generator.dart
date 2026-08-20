@@ -1,8 +1,5 @@
 import 'dart:math';
 
-/// Generates a random 10-character password that always contains at least one
-/// letter and one number (matching the app's password policy). Uses
-/// [Random.secure] so admin-generated passwords are not guessable.
 String generatePassword({Random? random}) {
   const letters = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ';
   const digits = '23456789';

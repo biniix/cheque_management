@@ -53,8 +53,6 @@ class ChequePreviewScreen extends ConsumerWidget {
 
     final currencyFormat = NumberFormat('#,##0.00', 'en_US');
 
-    // Use the database-driven template for this bank when one exists — the
-    // exact template the book was created with, else the bank's template.
     final allTemplates = ref.watch(chequeTemplatesProvider);
     final templateEntry =
         (book != null && book.templateId != null)
@@ -86,7 +84,6 @@ class ChequePreviewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Container(
@@ -138,7 +135,6 @@ class ChequePreviewScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // Cheque leaf (full width) — template-driven when available.
             if (templateEntry != null)
               ChequeRenderer(
                 template: templateEntry.template,
@@ -152,6 +148,7 @@ class ChequePreviewScreen extends ConsumerWidget {
                 amountInWords: amountInWords,
                 crossed: crossed,
                 status: 'Issued',
+                chequeNumber: nextNumber ?? '',
               )
             else
               ChequeLeaf(
@@ -170,7 +167,6 @@ class ChequePreviewScreen extends ConsumerWidget {
               ),
             const SizedBox(height: 24),
 
-            // Actions below
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -335,8 +331,6 @@ class ChequePreviewScreen extends ConsumerWidget {
 
     int chequeId;
     if (editChequeId != null) {
-      // Edit mode: Skip transaction and balance deduction
-      // Preserve original transaction ID
       final originalCheque = ref.read(chequesProvider).where((c) => c.id == editChequeId).firstOrNull;
       await chequeNotifier.updateCheque(
         Cheque(
@@ -355,7 +349,6 @@ class ChequePreviewScreen extends ConsumerWidget {
       );
       chequeId = editChequeId!;
     } else {
-      // Warn (but never block) when balance is insufficient
       if (!date.isAfter(DateTime.now()) && account.balance < amount) {
         await showOverdraftWarningDialog(
           context,
@@ -366,7 +359,6 @@ class ChequePreviewScreen extends ConsumerWidget {
         );
       }
 
-      // Issue new cheque — the API automatically creates the transaction and deducts balance
       final result = await chequeNotifier.addCheque(
         Cheque(
           id: 0,
@@ -383,12 +375,10 @@ class ChequePreviewScreen extends ConsumerWidget {
       );
       chequeId = result.chequeId;
 
-      // Save the transaction that the API created into local state
       if (result.transactionData != null) {
         await txNotifier.addTransactionFromApi(result.transactionData!);
       }
 
-      // Update local account balance to match what the API calculated
       if (result.newBalance != null) {
         await ref.read(accountsProvider.notifier).updateBalance(
               account.id,
@@ -406,7 +396,6 @@ class ChequePreviewScreen extends ConsumerWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
-    // Navigate to cheque detail screen using the returned ID
     navigator.pushReplacementNamed('/cheque-detail', arguments: chequeId);
   }
 

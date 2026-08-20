@@ -5,9 +5,6 @@ import 'package:intl/intl.dart';
 import '../models/audit_log.dart';
 import '../providers/audit_logs_provider.dart';
 
-/// Opens a centered dialog showing WHO created (and last modified) a specific
-/// record — a bank account, customer, transaction or cheque.
-/// Admin-only — callers are responsible for gating on the current user's role.
 Future<void> showAuditLogDialog(
   BuildContext context, {
   required String entity, // 'account' | 'customer' | 'transaction' | 'transfer' | 'cheque'
@@ -83,7 +80,6 @@ class _AuditLogSheetState extends ConsumerState<_AuditLogSheet> {
     }
   }
 
-  /// The 'create' entry — who added this record.
   AuditLog? _creator(List<AuditLog> logs) {
     for (final log in logs) {
       if (log.action == 'create') return log;
@@ -91,7 +87,6 @@ class _AuditLogSheetState extends ConsumerState<_AuditLogSheet> {
     return null;
   }
 
-  /// The newest 'update'/'status_change' entry — who last changed it.
   AuditLog? _lastModifier(List<AuditLog> logs) {
     for (final log in logs) {
       if (log.action == 'update' || log.action == 'status_change') {
@@ -122,7 +117,7 @@ class _AuditLogSheetState extends ConsumerState<_AuditLogSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Header ──
+
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 12, 0),
           child: Row(
@@ -180,7 +175,7 @@ class _AuditLogSheetState extends ConsumerState<_AuditLogSheet> {
             ],
           ),
         ),
-        // ── Body ──
+
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
           child: _loading

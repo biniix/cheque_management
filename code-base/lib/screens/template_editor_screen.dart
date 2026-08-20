@@ -1,24 +1,15 @@
-import 'dart:convert';
 import 'dart:math' as math;
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
 import '../models/cheque_template.dart';
 import '../models/cheque_template_field.dart';
+import '../providers/accounts_provider.dart';
 import '../providers/cheque_templates_provider.dart';
 import '../utils/amount_to_words.dart';
 import '../widgets/cheque_renderer.dart';
 
-/// Admin cheque template editor, laid out like a design tool:
-///
-///   FIELDS panel (left)  ·  big design canvas (center)  ·  PROPERTIES (right)
-///
-/// Clicking a field type in the FIELDS panel (or tapping a field directly on
-/// the canvas) selects it; the PROPERTIES panel edits position, size and
-/// typography live on the canvas — the same [ChequeRenderer] used when writing
-/// and printing real cheques.
 class TemplateEditorScreen extends ConsumerStatefulWidget {
   const TemplateEditorScreen({super.key});
 
@@ -28,21 +19,16 @@ class TemplateEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
-  // ── Template-level state ──
   String _bankKey = '';
   final _templateNameCtrl = TextEditingController();
   final _canvasWidthCtrl = TextEditingController(text: '816');
   final _canvasHeightCtrl = TextEditingController(text: '336');
-  String _backgroundPath = '';
-  bool _useBankLogoBackground = false;
 
-  // ── Field / selection state ──
   List<ChequeTemplateField> _fields = [];
   int? _selectedFieldId;
   int? _editingTemplateId;
   int _nextFieldId = -1; // negative ids for unsaved rows
 
-  // ── Canvas state ──
   double _zoom = 1.0;
   bool _showFilled = false;
 
@@ -79,8 +65,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       _templateNameCtrl.clear();
       _canvasWidthCtrl.text = '816';
       _canvasHeightCtrl.text = '336';
-      _backgroundPath = '';
-      _useBankLogoBackground = true;
       _fields = [];
       _selectedFieldId = null;
       _nextFieldId = -1;
@@ -94,8 +78,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       _templateNameCtrl.text = item.template.templateName;
       _canvasWidthCtrl.text = item.template.canvasWidth.toStringAsFixed(0);
       _canvasHeightCtrl.text = item.template.canvasHeight.toStringAsFixed(0);
-      _backgroundPath = item.template.backgroundImagePath;
-      _useBankLogoBackground = !item.template.backgroundIsDataUri;
       _fields = List.of(item.fields);
       _selectedFieldId = _fields.isNotEmpty ? _fields.first.id : null;
       _nextFieldId = -1;
@@ -137,42 +119,41 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   }
 
   void _addDefaultFields() {
-    // Y values are stored as distance from bottom of canvas.
-    // Canvas default height is 336.
-    final h = _canvasHeight;
     setState(() {
       _fields = [
         _newField(ChequeTemplateFieldName.bankLogo,
             ChequeTemplateFieldType.image,
-            x: 32, y: h - 26),
+            x: 340, y: 260),
         _newField(ChequeTemplateFieldName.bankName,
             ChequeTemplateFieldType.text,
-            x: 96, y: h - 24,
-            fontSize: 18, fontWeight: 'w700'),
+            x: 400, y: 260,
+            fontSize: 16, fontWeight: 'w700'),
         _newField(ChequeTemplateFieldName.branch,
             ChequeTemplateFieldType.text,
-            x: 96, y: h - 50,
+            x: 400, y: 280,
             fontSize: 10),
         _newField(ChequeTemplateFieldName.date, ChequeTemplateFieldType.text,
-            x: 640, y: h - 30),
+            x: 620, y: 260),
         _newField(ChequeTemplateFieldName.payee, ChequeTemplateFieldType.text,
-            x: 40, y: h - 118),
+            x: 40, y: 220),
         _newField(ChequeTemplateFieldName.amountWords,
             ChequeTemplateFieldType.text,
-            x: 40, y: h - 156),
+            x: 40, y: 180),
         _newField(ChequeTemplateFieldName.amountNumeric,
             ChequeTemplateFieldType.text,
-            x: 620, y: h - 118, fontSize: 16, fontWeight: 'w700'),
+            x: 580, y: 180, fontSize: 16, fontWeight: 'w700'),
+        _newField(ChequeTemplateFieldName.chequeNumber,
+            ChequeTemplateFieldType.text,
+            x: 40, y: 70,
+            fontSize: 11, fontWeight: 'w500'),
         _newField(ChequeTemplateFieldName.digitalStamp,
             ChequeTemplateFieldType.image,
-            x: 660, y: h - 250),
+            x: 640, y: 120),
       ];
       _selectedFieldId = _fields.isNotEmpty ? _fields.first.id : null;
     });
   }
 
-  /// Adds a field type from the FIELDS panel — or selects it if it already
-  /// exists on the canvas.
   void _addFieldType(ChequeTemplateFieldName name) {
     final existing = _fields.where((f) => f.fieldName == name).firstOrNull;
     if (existing != null) {
@@ -210,36 +191,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     });
   }
 
-  Future<void> _pickBackgroundImage() async {
-    final file = await FilePicker.pickFile(type: FileType.image);
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
-    final base64 = base64Encode(bytes);
-    final mime = _mimeType(file.name);
-    if (!mounted) return;
-    setState(() {
-      _backgroundPath = 'data:$mime;base64,$base64';
-      _useBankLogoBackground = false;
-    });
-  }
-
-  String _mimeType(String name) {
-    final ext = name.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'png':
-        return 'image/png';
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'webp':
-        return 'image/webp';
-      case 'gif':
-        return 'image/gif';
-      default:
-        return 'image/png';
-    }
-  }
-
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
     if (_bankKey.isEmpty) {
@@ -257,16 +208,12 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       return;
     }
 
-    final background = _useBankLogoBackground || _backgroundPath.isEmpty
-        ? Constants.getBankLogoPath(_bankKey)
-        : _backgroundPath;
-
     final template = ChequeTemplate(
       id: _editingTemplateId ?? 0,
       bankKey: _bankKey,
       bankName: _bankName,
       templateName: _templateNameCtrl.text.trim(),
-      backgroundImagePath: background,
+      backgroundImagePath: '',
       canvasWidth: _canvasWidth,
       canvasHeight: _canvasHeight,
     );
@@ -276,7 +223,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
         .saveTemplate(template, _fields);
 
     if (!mounted) return;
-    // Reload the just-saved template (fresh field ids) into the editor.
     final templates = ref.read(chequeTemplatesProvider);
     final saved = templates
         .where((t) => t.template.bankKey == _bankKey)
@@ -386,7 +332,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     );
   }
 
-  // ── Top setup bar: bank, name, canvas size, background ──
   Widget _setupBar(List<ChequeTemplateWithFields> templates) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -407,30 +352,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          _setupDropdown<String>(
-            value: _bankKey.isEmpty ? null : _bankKey,
-            hint: 'Bank',
-            width: 200,
-            items: {
-              for (final e in Constants.sortedBankEntries) e.key: e.value,
-            },
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() {
-                _bankKey = v;
-                if (_fields.isEmpty) _addDefaultFields();
-              });
-            },
-          ),
-          SizedBox(
-            width: 190,
-            child: TextField(
-              controller: _templateNameCtrl,
-              style: GoogleFonts.inter(fontSize: 12),
-              decoration: _setupInputDecoration('Template name'),
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
+          _bankDropdown(),
           SizedBox(
             width: 170,
             child: Row(
@@ -462,19 +384,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
               ],
             ),
           ),
-          _chip('White', !_useBankLogoBackground && _backgroundPath.isEmpty, () {
-            setState(() {
-              _useBankLogoBackground = false;
-              _backgroundPath = '';
-            });
-          }),
-          _chip('Bank logo', _useBankLogoBackground, () {
-            setState(() {
-              _useBankLogoBackground = true;
-              _backgroundPath = Constants.getBankLogoPath(_bankKey);
-            });
-          }),
-          _chip('Upload scan', !_useBankLogoBackground && _backgroundPath.isNotEmpty, _pickBackgroundImage),
+
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded,
                 size: 19, color: Color(0xFFEF4444)),
@@ -486,30 +396,58 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     );
   }
 
-  Widget _setupDropdown<T>({
-    required T? value,
-    required String hint,
-    required double width,
-    required Map<T, String> items,
-    required ValueChanged<T?> onChanged,
-  }) {
+  Widget _bankDropdown() {
+    final accounts = ref.watch(accountsProvider);
+    final activeBankKeys = accounts.map((a) => a.bankKey).toSet();
+    final items = {
+      for (final e in Constants.sortedBankEntries)
+        if (activeBankKeys.contains(e.key)) e.key: e.value,
+    };
     return SizedBox(
-      width: width,
-      child: DropdownButtonFormField<T>(
-        initialValue: value,
+      width: 200,
+      child: DropdownButtonFormField<String>(
+        initialValue: _bankKey.isEmpty ? null : _bankKey,
         isExpanded: true,
-        decoration: _setupInputDecoration(hint),
+        decoration: _setupInputDecoration('Bank'),
         items: items.entries
             .map((e) => DropdownMenuItem(
                   value: e.key,
-                  child: Text(
-                    e.value,
-                    style: GoogleFonts.inter(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.asset(
+                          Constants.getBankLogoPath(e.key),
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.account_balance_rounded,
+                            size: 20,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          e.value,
+                          style: GoogleFonts.inter(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ))
             .toList(),
-        onChanged: (v) => onChanged(v),
+        onChanged: (v) {
+          if (v == null) return;
+          setState(() {
+            _bankKey = v;
+            _templateNameCtrl.text = Constants.getBankName(v);
+            if (_fields.isEmpty) _addDefaultFields();
+          });
+        },
       ),
     );
   }
@@ -530,43 +468,16 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     );
   }
 
-  Widget _chip(String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEEF2FF) : const Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color:
-                selected ? const Color(0xFF2563EB) : const Color(0xFFE8ECF0),
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? const Color(0xFF2563EB) : const Color(0xFF6B7280),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Left FIELDS panel ──
   Widget _fieldsPanel() {
     const types = [
-      ChequeTemplateFieldName.bankName,
       ChequeTemplateFieldName.bankLogo,
+      ChequeTemplateFieldName.bankName,
       ChequeTemplateFieldName.date,
       ChequeTemplateFieldName.payee,
       ChequeTemplateFieldName.amountNumeric,
       ChequeTemplateFieldName.amountWords,
       ChequeTemplateFieldName.branch,
+      ChequeTemplateFieldName.chequeNumber,
       ChequeTemplateFieldName.digitalStamp,
     ];
     return Container(
@@ -652,7 +563,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     );
   }
 
-  // ── Central design canvas ──
   Widget _canvasArea() {
     return Expanded(
       child: Container(
@@ -685,11 +595,12 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                           bankName: _bankName,
                           branch: 'Head Office · Addis Ababa',
                           date: DateTime.now(),
-                          payee: _showFilled ? 'Biniyam Teklu' : '',
-                          amount: _showFilled ? 15000.50 : 0,
+                          payee: _showFilled ? 'Tesfaye Belay' : '',
+                          amount: _showFilled ? 15000 : 0,
                           amountInWords: _showFilled
-                              ? amountToWords(15000.50)
+                              ? amountToWords(15000)
                               : '',
+                          chequeNumber: _showFilled ? '000001' : '',
                           status: 'Issued',
                           crossed: false,
                           isPreview: !_showFilled,
@@ -714,9 +625,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
         bankKey: _bankKey,
         bankName: _bankName,
         templateName: _templateNameCtrl.text.trim(),
-        backgroundImagePath: _useBankLogoBackground && _bankKey.isNotEmpty
-            ? Constants.getBankLogoPath(_bankKey)
-            : _backgroundPath,
+        backgroundImagePath: '',
         canvasWidth: _canvasWidth,
         canvasHeight: _canvasHeight,
       );
@@ -793,25 +702,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
             tooltip: 'Toggle filled preview',
             onPressed: () => setState(() => _showFilled = !_showFilled),
           ),
-          const SizedBox(width: 10),
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(context, '/admin/template-list');
-            },
-            icon: const Icon(Icons.list_rounded, size: 16),
-            label: Text(
-              'All Templates',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF374151),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          const SizedBox(width: 6),
+
           ElevatedButton.icon(
             onPressed: _save,
             icon: const Icon(Icons.save_rounded, size: 16),
@@ -834,7 +725,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     );
   }
 
-  // ── Right PROPERTIES panel ──
   Widget _propertiesPanel() {
     final f = _selectedField;
     final isImage = f?.fieldType == ChequeTemplateFieldType.image;
@@ -960,65 +850,50 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                           onChanged: (d) =>
                               _updateField(f.copyWith(maxWidth: d)),
                         ),
-                      const SizedBox(height: 16),
-                      _sectionLabel('TYPOGRAPHY'),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          _propNum(
-                            key: ValueKey('pfs-${f.id}'),
-                            label: 'Font size',
-                            initial: f.fontSize,
-                            onChanged: (d) =>
-                                _updateField(f.copyWith(fontSize: d)),
-                          ),
-                          const SizedBox(width: 8),
-                          _propDropdown(
-                            key: ValueKey('pfw-${f.id}'),
-                            label: 'Weight',
-                            value: f.fontWeight ?? 'normal',
-                            items: const {
-                              'normal': 'Normal',
-                              'w500': 'Medium',
-                              'w600': 'Semi-bold',
-                              'w700': 'Bold',
-                            },
-                            onChanged: (v) =>
-                                _updateField(f.copyWith(fontWeight: v)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          _propDropdown(
-                            key: ValueKey('psi-${f.id}'),
-                            label: 'Style',
-                            value: f.italic ? 'italic' : 'normal',
-                            items: const {
-                              'normal': 'Normal',
-                              'italic': 'Italic',
-                            },
-                            onChanged: (v) =>
-                                _updateField(f.copyWith(italic: v == 'italic')),
-                          ),
-                          const SizedBox(width: 8),
-                          _propDropdown(
-                            key: ValueKey('pal-${f.id}'),
-                            label: 'Align',
-                            value: f.alignment ?? 'left',
-                            items: const {
-                              'left': 'Left',
-                              'center': 'Center',
-                              'right': 'Right',
-                            },
-                            onChanged: (v) =>
-                                _updateField(f.copyWith(alignment: v)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _colorRow(f),
+                      if (!isImage) ...[
+                        const SizedBox(height: 16),
+                        _sectionLabel('TYPOGRAPHY'),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            _propNum(
+                              key: ValueKey('pfs-${f.id}'),
+                              label: 'Font size',
+                              initial: f.fontSize,
+                              onChanged: (d) =>
+                                  _updateField(f.copyWith(fontSize: d)),
+                            ),
+                            const SizedBox(width: 8),
+                            _propDropdown(
+                              key: ValueKey('pfw-${f.id}'),
+                              label: 'Weight',
+                              value: f.fontWeight ?? 'normal',
+                              items: const {
+                                'normal': 'Normal',
+                                'w500': 'Medium',
+                                'w600': 'Semi-bold',
+                                'w700': 'Bold',
+                              },
+                              onChanged: (v) =>
+                                  _updateField(f.copyWith(fontWeight: v)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _propDropdown(
+                          key: ValueKey('psi-${f.id}'),
+                          label: 'Style',
+                          value: f.italic ? 'italic' : 'normal',
+                          items: const {
+                            'normal': 'Normal',
+                            'italic': 'Italic',
+                          },
+                          onChanged: (v) =>
+                              _updateField(f.copyWith(italic: v == 'italic')),
+                        ),
+                        const SizedBox(height: 12),
+                        _colorRow(f),
+                      ],
                     ],
                   ),
           ),

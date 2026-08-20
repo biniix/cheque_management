@@ -4,14 +4,6 @@ import 'package:intl/intl.dart';
 import '../constants.dart';
 import '../models/cheque_design.dart';
 
-/// Renders a cheque exactly as it would appear on a physical leaf:
-/// bank name + logo, cheque number, date, payee, amount in words and figures,
-/// a digital stamp alternative to signature, and status pill.
-///
-/// When a [design] template (per bank + denomination) is provided, the leaf
-/// follows it — logo placement (left / center / right), colors, cheque-number
-/// position, amount box alignment, MICR line — otherwise it renders the
-/// default layout.
 class ChequeLeaf extends StatelessWidget {
   final String bankName;
   final String bankKey;
@@ -44,7 +36,7 @@ class ChequeLeaf extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Template values (fall back to the default design) ──
+
     final d = design;
     final logoPosition = d?.logoPosition ?? 'left';
     final logoSize = d?.logoSize ?? 36;
@@ -77,7 +69,7 @@ class ChequeLeaf extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          // ── Header (logo + name + cheque number) ──
+
           if (logoPosition == 'center')
             _centeredHeader(
               logoSize: logoSize,
@@ -117,7 +109,6 @@ class ChequeLeaf extends StatelessWidget {
               ],
             ),
 
-          // Date line below the bank name/logo, right-aligned
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
@@ -126,13 +117,11 @@ class ChequeLeaf extends StatelessWidget {
             ),
           ),
 
-          // Divider
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: Color(0xFFE8ECF0)),
           ),
 
-          // Payee line — show exactly what the user entered (e.g. "Biniyam Teklu" or "Bearer")
           _ChequeLine(
             label: 'Pay',
             value: payee,
@@ -140,7 +129,6 @@ class ChequeLeaf extends StatelessWidget {
             muted: muted,
           ),
 
-          // Amount in words
           _ChequeLine(
             label: 'The Sum of',
             value: amountInWords.isNotEmpty
@@ -152,7 +140,6 @@ class ChequeLeaf extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          // Amount in figures (right-aligned box)
           Align(
             alignment: amountAlign,
             child: Container(
@@ -176,12 +163,11 @@ class ChequeLeaf extends StatelessWidget {
           const Divider(height: 1, color: Color(0xFFE8ECF0)),
           const SizedBox(height: 10),
 
-          // Footer: account details + crossing indicator
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Account details
+
               Expanded(
                 child: RichText(
                   text: TextSpan(
@@ -212,7 +198,6 @@ class ChequeLeaf extends StatelessWidget {
                 ),
               ),
 
-              // Digital stamp (replaces signature)
               if (status == 'Issued')
                 Container(
                   margin: const EdgeInsets.only(right: 24),
@@ -252,10 +237,8 @@ class ChequeLeaf extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Status pill
           if (showStatusPill) _StatusPill(status: status),
 
-          // MICR line (machine-readable numbers, bottom of the leaf)
           if (showMicr) ...[
             const SizedBox(height: 12),
             Align(
@@ -273,7 +256,6 @@ class ChequeLeaf extends StatelessWidget {
             ],
           ),
 
-          // ── Crossed-cheque marking: two parallel diagonal lines, top-left ──
           if (crossed)
             Positioned(
               top: 0,
@@ -295,7 +277,6 @@ class ChequeLeaf extends StatelessWidget {
     );
   }
 
-  /// Bank logo + bank name (with optional head-office line).
   Widget _logoBlock({
     required double logoSize,
     required Color primary,
@@ -386,7 +367,6 @@ class ChequeLeaf extends StatelessWidget {
     );
   }
 
-  /// Centered header: logo + bank name + cheque number stacked in the middle.
   Widget _centeredHeader({
     required double logoSize,
     required Color primary,
@@ -429,7 +409,6 @@ class ChequeLeaf extends StatelessWidget {
     );
   }
 
-  /// Date line: "Date  [dd / MM / yyyy]" shown right-aligned below the bank header.
   Widget _dateBlock({
     required Color accent,
     required Color muted,
@@ -475,8 +454,6 @@ class ChequeLeaf extends StatelessWidget {
   }
 }
 
-/// Two parallel diagonal slash lines in the top-left corner — the classic
-/// "crossed cheque" marking.
 class _CrossedLinesPainter extends CustomPainter {
   final Color color;
 
@@ -495,7 +472,7 @@ class _CrossedLinesPainter extends CustomPainter {
     final dir = end - start;
     final length = dir.distance;
     if (length == 0) return;
-    // Perpendicular offset keeps the second line truly parallel to the first.
+
     final perp = Offset(-dir.dy / length, dir.dx / length) * 16;
 
     canvas.drawLine(start, end, paint);

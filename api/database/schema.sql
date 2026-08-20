@@ -116,8 +116,6 @@ CREATE TABLE IF NOT EXISTS cheques (
 
 -- -----------------------------------------------------------
 -- Audit log table (activity log)
--- Records logins, logouts, and create/update/delete actions with the
--- actor's name snapshot so the trail survives employee deletion.
 -- -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -136,11 +134,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------
--- Cheque design templates (per bank + optional denomination)
--- bank_key + denomination uniquely identify a template.
--- denomination '' = applies to every leaf of that bank; a specific
--- value (e.g. '50' for the 50-birr leaf) overrides it.
--- Wallet services (telebirr / mpesa) intentionally have no templates.
+-- Cheque design templates
 -- -----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cheque_designs (
     id INT AUTO_INCREMENT PRIMARY KEY,

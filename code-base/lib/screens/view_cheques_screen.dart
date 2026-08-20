@@ -23,15 +23,22 @@ class ViewChequesScreen extends ConsumerStatefulWidget {
 class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
   String _statusFilter = 'all';
   int? _accountFilter;
+  bool _banksExpanded = false;
 
-  // Quick status options
   static const _statusOptions = [
     ('All', 'all', Icons.all_inclusive_rounded),
     ('Issued', 'Issued', Icons.schedule_rounded),
-    ('Cleared', 'Cleared', Icons.check_circle_rounded),
     ('Stale', 'Stale', Icons.warning_rounded),
+    ('Cleared', 'Cleared', Icons.check_circle_rounded),
     ('Void', 'Void', Icons.cancel_rounded),
   ];
+
+  String get _selectedBankLabel {
+    if (_accountFilter == null) return 'Banks';
+    final accounts = ref.read(accountsProvider);
+    final acc = accounts.where((a) => a.id == _accountFilter).firstOrNull;
+    return acc?.bankName ?? 'Banks';
+  }
 
   @override
   void initState() {
@@ -52,7 +59,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     final currencyFormat = NumberFormat('#,##0.00', 'en_US');
     final dateFormat = DateFormat('MMM d, yyyy');
 
-    // Apply filters
     var filtered = cheques;
     if (_statusFilter != 'all') {
       filtered = filtered.where((c) => c.status == _statusFilter).toList();
@@ -66,12 +72,11 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
           filtered.where((c) => bookIds.contains(c.chequebookId)).toList();
     }
 
-    // Counts per status
     final issuedCount =
         cheques.where((c) => c.status == 'Issued').length;
+    final staleCount = cheques.where((c) => c.status == 'Stale').length;
     final clearedCount =
         cheques.where((c) => c.status == 'Cleared').length;
-    final staleCount = cheques.where((c) => c.status == 'Stale').length;
     final voidCount = cheques.where((c) => c.status == 'Void').length;
 
     return Scaffold(
@@ -85,106 +90,229 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
                 const AppHeader(title: 'Cheques'),
                 Expanded(
                   child: Column(
-                    children: [
-                      // ── Filters Section ──
+                    children: [                      // ── Filters Section ──
                       Container(
                         color: Colors.white,
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Status filter chips (horizontal row)
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: _statusOptions.map((opt) {
-                                  final label = opt.$1;
-                                  final type = opt.$2;
-                                  final icon = opt.$3;
-                                  final isSelected = _statusFilter == type;
 
-                                  // Count for this filter
-                                  int count;
-                                  switch (type) {
-                                    case 'Issued':
-                                      count = issuedCount;
-                                      break;
-                                    case 'Cleared':
-                                      count = clearedCount;
-                                      break;
-                                    case 'Stale':
-                                      count = staleCount;
-                                      break;
-                                    case 'Void':
-                                      count = voidCount;
-                                      break;
-                                    default:
-                                      count = cheques.length;
-                                  }
-
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.only(right: 8),
-                                    child: _buildStatusChip(
-                                      label,
-                                      type,
-                                      icon,
-                                      count,
-                                      isSelected,
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
+                            Row(
+                              children: _statusOptions.map((opt) {
+                                final label = opt.$1;
+                                final type = opt.$2;
+                                final icon = opt.$3;
+                                final isSelected = _statusFilter == type;
+                                int count;
+                                switch (type) {
+                                  case 'Issued':
+                                    count = issuedCount;
+                                    break;
+                                  case 'Stale':
+                                    count = staleCount;
+                                    break;
+                                  case 'Cleared':
+                                    count = clearedCount;
+                                    break;
+                                  case 'Void':
+                                    count = voidCount;
+                                    break;
+                                  default:
+                                    count = cheques.length;
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _buildStatusChip(
+                                    label, type, icon, count, isSelected,
+                                  ),
+                                );
+                              }).toList(),
                             ),
                             const SizedBox(height: 12),
 
-                            // Account filter section
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  // "All Accounts" section chip
-                                  _buildAccountSectionChip(
-                                    'All Accounts',
-                                    null,
-                                    Icons.account_balance_rounded,
-                                    isSelected: _accountFilter == null,
-                                    count: cheques.length,
+                            GestureDetector(
+                              onTap: () => setState(() => _banksExpanded = !_banksExpanded),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: _accountFilter != null
+                                      ? const Color(0xFF5B5BD6).withValues(alpha: 0.1)
+                                      : const Color(0xFFF5F7FA),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _accountFilter != null
+                                        ? const Color(0xFF5B5BD6)
+                                        : const Color(0xFFF0F0F0),
+                                    width: _accountFilter != null ? 1.5 : 1,
                                   ),
-                                  const SizedBox(width: 8),
-                                  // Per-bank chips
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.account_balance_rounded,
+                                      size: 16,
+                                      color: _accountFilter != null
+                                          ? const Color(0xFF5B5BD6)
+                                          : const Color(0xFF6B7280),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _selectedBankLabel,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: _accountFilter != null
+                                            ? const Color(0xFF5B5BD6)
+                                            : const Color(0xFF4A4E5C),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      _banksExpanded
+                                          ? Icons.keyboard_arrow_up_rounded
+                                          : Icons.keyboard_arrow_down_rounded,
+                                      size: 16,
+                                      color: _accountFilter != null
+                                          ? const Color(0xFF5B5BD6)
+                                          : const Color(0xFF9CA3AF),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),                              // Inline bank list when expanded
+                              if (_banksExpanded) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
+
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() => _accountFilter = null);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: _accountFilter == null
+                                            ? const Color(0xFF5B5BD6).withValues(alpha: 0.1)
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: _accountFilter == null
+                                              ? const Color(0xFF5B5BD6)
+                                              : const Color(0xFFF0F0F0),
+                                          width: _accountFilter == null ? 1.5 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.all_inclusive_rounded,
+                                            size: 14,
+                                            color: _accountFilter == null
+                                                ? const Color(0xFF5B5BD6)
+                                                : const Color(0xFF6B7280),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'All',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              fontWeight: _accountFilter == null ? FontWeight.w600 : FontWeight.w500,
+                                              color: _accountFilter == null
+                                                  ? const Color(0xFF5B5BD6)
+                                                  : const Color(0xFF4A4E5C),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
                                   ...accounts.map((a) {
-                                    final bookIdsForAcc = books
+                                    final bookIds = books
                                         .where((b) => b.accountId == a.id)
                                         .map((b) => b.id)
                                         .toList();
-                                    final accChequeCount = cheques
-                                        .where((c) =>
-                                            bookIdsForAcc
-                                                .contains(c.chequebookId))
+                                    final count = cheques
+                                        .where((c) => bookIds.contains(c.chequebookId))
                                         .length;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: 8),
-                                      child: _buildAccountSectionChip(
-                                        a.bankName,
-                                        a.id,
-                                        Icons.account_balance_rounded,
-                                        isSelected:
-                                            _accountFilter == a.id,
-                                        count: accChequeCount,
-                                        bankKey: a.bankKey,
+                                    final isSelected = _accountFilter == a.id;
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() => _accountFilter = a.id);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(0xFF5B5BD6).withValues(alpha: 0.1)
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xFF5B5BD6)
+                                                : const Color(0xFFF0F0F0),
+                                            width: isSelected ? 1.5 : 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: Image.asset(
+                                                Constants.getBankLogoPath(a.bankKey),
+                                                width: 18,
+                                                height: 18,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) => Icon(
+                                                  Icons.account_balance_rounded,
+                                                  size: 14,
+                                                  color: isSelected
+                                                      ? const Color(0xFF5B5BD6)
+                                                      : const Color(0xFF6B7280),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              a.bankName,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 11,
+                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                                color: isSelected
+                                                    ? const Color(0xFF5B5BD6)
+                                                    : const Color(0xFF4A4E5C),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '$count',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w700,
+                                                color: isSelected
+                                                    ? const Color(0xFF5B5BD6)
+                                                    : const Color(0xFF9CA3AF),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     );
                                   }),
                                 ],
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
 
-                      // ── Stats Bar ──
                       Container(
                         padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
                         child: Row(
@@ -198,7 +326,7 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
                               ),
                             ),
                             const Spacer(),
-                            // Quick action buttons in a row
+
                             SizedBox(
                               height: 36,
                               child: ElevatedButton.icon(
@@ -228,7 +356,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
                         ),
                       ),
 
-                      // ── Cheque List ──
                       Expanded(
                         child: filtered.isEmpty
                             ? _buildEmptyState()
@@ -270,7 +397,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     );
   }
 
-  /// Status filter chip with count badge
   Widget _buildStatusChip(
     String label,
     String type,
@@ -348,106 +474,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     );
   }
 
-  /// Account section chip (either "All Accounts" or per-bank)
-  Widget _buildAccountSectionChip(
-    String label,
-    int? accountId,
-    IconData icon, {
-    bool isSelected = false,
-    int count = 0,
-    String? bankKey,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => setState(() => _accountFilter = accountId),
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFF5B5BD6).withValues(alpha: 0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF5B5BD6)
-                  : const Color(0xFFF0F0F0),
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Bank logo or icon
-              if (bankKey != null && bankKey.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.asset(
-                    Constants.getBankLogoPath(bankKey),
-                    width: 20,
-                    height: 20,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Icon(
-                      icon,
-                      size: 18,
-                      color: isSelected
-                          ? const Color(0xFF5B5BD6)
-                          : const Color(0xFF6B7280),
-                    ),
-                  ),
-                )
-              else
-                Icon(
-                  icon,
-                  size: 18,
-                  color: isSelected
-                      ? const Color(0xFF5B5BD6)
-                      : const Color(0xFF6B7280),
-                ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected
-                      ? const Color(0xFF5B5BD6)
-                      : const Color(0xFF4A4E5C),
-                ),
-              ),
-              if (count > 0) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF5B5BD6).withValues(alpha: 0.15)
-                        : const Color(0xFFF5F7FA),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '$count',
-                    style: GoogleFonts.inter(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? const Color(0xFF5B5BD6)
-                          : const Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Cheque card with sleek design
   Widget _buildChequeCard(
     dynamic cheque,
     dynamic acc,
@@ -479,7 +505,7 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top row: Cheque # + Status + Amount
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -528,7 +554,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Middle: Payee + Date
             Row(
               children: [
                 Icon(Icons.person_outline,
@@ -555,7 +580,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
               ],
             ),
 
-            // Bank info
             if (acc != null) ...[
               const SizedBox(height: 4),
               Row(
@@ -592,7 +616,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
               ),
             ],
 
-            // Action buttons row for Issued cheques
             if (cheque.status == 'Issued') ...[
               const SizedBox(height: 12),
               Row(
@@ -620,7 +643,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     );
   }
 
-  /// Small horizontal action button
   Widget _buildQuickAction(
     IconData icon,
     String label,
@@ -655,7 +677,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     );
   }
 
-  /// Empty state
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -766,7 +787,6 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     final cheques = ref.read(chequesProvider);
     final cheque = cheques.where((c) => c.id == chequeId).firstOrNull;
 
-    // Find linked account for refund
     Account? account;
     if (cheque != null) {
       final book = books.where((b) => b.id == cheque.chequebookId).firstOrNull;
@@ -830,8 +850,7 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
     if (confirmed == true) {
       await chequesNotifier.updateStatus(chequeId, newStatus);
 
-      // Refund the amount to the linked account when voiding
-      if (isVoid && account != null && refundAmount > 0) {
+      if (isVoid && account != null && refundAmount > 0 && (cheque?.deducted ?? false)) {
         await accountsNotifier.updateBalance(
           account.id,
           account.balance + refundAmount,
@@ -843,7 +862,9 @@ class _ViewChequesScreenState extends ConsumerState<ViewChequesScreen> {
           SnackBar(
             content: Text(
               isVoid
-                  ? 'Cheque voided. ETB ${currencyFormat.format(refundAmount)} refunded'
+                  ? (cheque?.deducted ?? false)
+                      ? 'Cheque voided. ETB ${currencyFormat.format(refundAmount)} refunded'
+                      : 'Cheque voided (no refund — balance was not deducted)'
                   : 'Cheque marked as $newStatus',
             ),
             backgroundColor: const Color(0xFF10B981),

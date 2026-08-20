@@ -41,8 +41,7 @@ class _CreateChequebookScreenState
   @override
   Widget build(BuildContext context) {
     final accounts = ref.watch(accountsProvider);
-    // Wallets (Telebirr / M-PESA) are not banks — you cannot issue a cheque
-    // book against them.
+
     final bankAccounts = accounts
         .where((a) => a.bankKey != 'telebirr' && a.bankKey != 'mpesa')
         .toList();
@@ -51,8 +50,7 @@ class _CreateChequebookScreenState
     final selectedAccount = _selectedAccountId != null
         ? accounts.where((a) => a.id == _selectedAccountId).firstOrNull
         : null;
-    // Templates for the selected account's bank — the user picks one of the
-    // existing templates when creating the book.
+
     final bankTemplates = selectedAccount != null
         ? templates
             .where((t) => t.template.bankKey == selectedAccount.bankKey)
@@ -95,7 +93,7 @@ class _CreateChequebookScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Account
+
                     Text(
                       'Account',
                       style: GoogleFonts.inter(
@@ -136,7 +134,6 @@ class _CreateChequebookScreenState
                     ),
                     const SizedBox(height: 20),
 
-                    // Template — pick from the templates that exist for this bank.
                     Text(
                       'Cheque Template',
                       style: GoogleFonts.inter(
@@ -204,7 +201,6 @@ class _CreateChequebookScreenState
                       ),
                     const SizedBox(height: 20),
 
-                    // Size
                     Text(
                       'Number of Cheques',
                       style: GoogleFonts.inter(
@@ -215,8 +211,7 @@ class _CreateChequebookScreenState
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      // Buttons are sized proportionally to the leaf count
-                      // (10 : 25 : 50) so 50 is biggest and 10 smallest.
+
                       children: [10, 25, 50].map((size) {
                         final isSelected = _size == size;
                         return Expanded(
@@ -275,7 +270,6 @@ class _CreateChequebookScreenState
                     ),
                     const SizedBox(height: 20),
 
-                    // Start Number
                     _buildField(
                       'Starting Cheque Number',
                       _startNumberCtrl,
@@ -292,7 +286,6 @@ class _CreateChequebookScreenState
               ),
               const SizedBox(height: 24),
 
-              // Preview
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -332,7 +325,6 @@ class _CreateChequebookScreenState
 
               const SizedBox(height: 24),
 
-              // Save button
               SizedBox(
                 width: double.infinity,
                 height: 52,

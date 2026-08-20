@@ -1,5 +1,3 @@
-/// The logical fields a bank cheque leaf contains. Each maps to the enum from
-/// the spec so the renderer knows what value to draw at a field's position.
 enum ChequeTemplateFieldName {
   bankLogo('bankLogo', 'Bank Logo', 'Fixed per template — the bank logo image.'),
   bankName('bankName', 'Bank Name', 'Bank name text (e.g. Commercial Bank of Ethiopia).'),
@@ -8,6 +6,7 @@ enum ChequeTemplateFieldName {
   payee('payee', 'Payee', 'Pay to the order of…'),
   amountNumeric('amountNumeric', 'Amount (figures)', 'Numeric amount, e.g. ETB 15,000.50.'),
   amountWords('amountWords', 'Amount (words)', 'Amount written out in words (wraps to maxWidth).'),
+  chequeNumber('chequeNumber', 'Cheque Number', 'Cheque number, placed at bottom left.'),
   digitalStamp('digitalStamp', 'Digital Stamp', 'Status-based stamp (issued / cleared / void).');
 
   const ChequeTemplateFieldName(this.key, this.label, this.description);
@@ -20,7 +19,6 @@ enum ChequeTemplateFieldName {
       values.firstWhere((e) => e.key == key, orElse: () => ChequeTemplateFieldName.payee);
 }
 
-/// How a field is drawn: rendered text or an image.
 enum ChequeTemplateFieldType {
   text('text'),
   image('image');
@@ -33,15 +31,9 @@ enum ChequeTemplateFieldType {
       values.firstWhere((e) => e.key == key, orElse: () => ChequeTemplateFieldType.text);
 }
 
-/// One positioned element on a [ChequeTemplate].
-///
-/// `x` / `y` are offsets in canvas pixels measured from the top-left of the
-/// background image. The same coordinates are used by the on-screen renderer
-/// and the PDF generator so preview, print and MICR alignment all agree.
 class ChequeTemplateField {
   final int id;
 
-  /// FK to [ChequeTemplate.id].
   final int templateId;
 
   final ChequeTemplateFieldName fieldName;
@@ -50,17 +42,13 @@ class ChequeTemplateField {
   final double x;
   final double y;
 
-  // ── Text-only options ──
   final double? fontSize;
-  final String? fontWeight; // 'normal' | 'w500' | 'w600' | 'w700' | 'bold'
-  final String? alignment; // 'left' | 'center' | 'right'
-  final String? colorHex; // '#RRGGBB', null = default ink
+  final String? fontWeight;
+  final String? alignment;
+  final String? colorHex;
   final bool italic;
 
-  /// Constrains text width so long values (e.g. amountWords) wrap.
   final double? maxWidth;
-
-  // ── Image-only options ──
   final String? imagePath;
   final double? imageWidth;
   final double? imageHeight;
@@ -83,7 +71,6 @@ class ChequeTemplateField {
     this.imageHeight,
   });
 
-  /// Convenience for text fields.
   factory ChequeTemplateField.text({
     required int id,
     required int templateId,
@@ -108,7 +95,6 @@ class ChequeTemplateField {
         maxWidth: maxWidth,
       );
 
-  /// Convenience for image fields.
   factory ChequeTemplateField.image({
     required int id,
     required int templateId,

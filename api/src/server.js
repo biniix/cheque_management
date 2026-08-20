@@ -5,7 +5,6 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 async function startServer() {
-  // Initialize database tables before starting
   try {
     const initDatabase = require('./utils/initDb');
     await initDatabase();
@@ -98,7 +97,7 @@ async function startServer() {
   });
 
   app.listen(PORT, () => {
-    console.log(`cheque_management API running on http://localhost:${PORT}`);
+    console.log(`cd  API running on http://localhost:${PORT}`);
     console.log(`Swagger UI: http://localhost:${PORT}/api-docs`);
   });
 }

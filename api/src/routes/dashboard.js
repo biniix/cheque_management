@@ -5,65 +5,8 @@ const db = require('../utils/db');
 
 router.use(auth);
 
-/**
- * @swagger
- * /dashboard:
- *   get:
- *     summary: Get dashboard overview (balance, alerts, recent transactions, monthly spending)
- *     tags: [Dashboard]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Dashboard data
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     totalBalance:
- *                       type: number
- *                     totalAccounts:
- *                       type: integer
- *                     accounts:
- *                       type: array
- *                       items:
- *                         type: object
- *                     alerts:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           type:
- *                             type: string
- *                           severity:
- *                             type: string
- *                           message:
- *                             type: string
- *                           accountId:
- *                             type: integer
- *                     recentTransactions:
- *                       type: array
- *                       items:
- *                         type: object
- *                     monthlySpending:
- *                       type: object
- *                       properties:
- *                         income:
- *                           type: number
- *                         expense:
- *                           type: number
- *       500:
- *         description: Server error
- */
 router.get('/', async (req, res) => {
   try {
-    // Shared company ledger: dashboard covers all company accounts.
     const accounts = await db.all('SELECT * FROM accounts');
 
     const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
@@ -80,7 +23,6 @@ router.get('/', async (req, res) => {
       }
     });
 
-    // Get account IDs for this user to query their transactions
     const accountIds = accounts.map(a => a.id);
     let recentTransactions = [];
     let monthlySpending = { income: 0, expense: 0 };
@@ -88,7 +30,6 @@ router.get('/', async (req, res) => {
     if (accountIds.length > 0) {
       const placeholders = accountIds.map(() => '?').join(',');
 
-      // Recent transactions (last 10)
       recentTransactions = await db.all(
         `SELECT t.*, a.bank_name, a.account_name
          FROM transactions t
@@ -99,7 +40,6 @@ router.get('/', async (req, res) => {
         accountIds
       );
 
-      // Monthly spending (current month)
       const now = new Date();
       const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 

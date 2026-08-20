@@ -18,8 +18,6 @@ class AuthState {
   final String? error;
   final bool isLoading;
 
-  /// True when the user logged in with an admin-given password and must pick
-  /// their own before using the app.
   final bool mustChangePassword;
 
   const AuthState({
@@ -36,7 +34,6 @@ class AuthState {
 
   bool get isAdmin => role == 'admin';
 
-  /// Whether the logged-in user may access a module (admins get everything).
   bool canAccess(String module) => isAdmin || moduleAccess.contains(module);
 
   AuthState copyWith({
@@ -75,10 +72,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> init() async {
     await _api.init();
 
-    // Try API token first
     if (_api.hasToken) {
       try {
-        // Restore user info from local session
+
         final localUser = await _local.getCurrentUser();
         if (localUser != null) {
           state = AuthState(
@@ -92,24 +88,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 localUser['must_change_password'] == true,
           );
         }
-        // Sync data from API
+
         await _syncAfterAuth();
         if (localUser != null) {
           state = state.copyWith(isLoading: false);
         } else {
-          // Token exists but no local session — token was set before local session saving was added.
-          // Clear it and fall through to local session (or logout if none).
+
           await _api.clearToken();
           await _local.clearCurrentUser();
         }
         return;
       } catch (_) {
-        // Token invalid or API unavailable — clear and fall through
+
         await _api.clearToken();
       }
     }
 
-    // Fall back to local session (offline mode)
     final localUser = await _local.getCurrentUser();
     if (localUser != null) {
       await _ref.read(accountsProvider.notifier).load();
@@ -130,7 +124,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Parse module_access stored as a JSON string or a list.
   static List<String> _parseModules(dynamic raw) {
     if (raw is List) return raw.map((m) => m.toString()).toList();
     if (raw is String && raw.trim().isNotEmpty) {
@@ -146,7 +139,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return [];
   }
 
-  /// After login, sync all data from API to local storage
   Future<void> _syncAfterAuth() async {
     await Future.wait([
       _ref.read(accountsProvider.notifier).syncFromApi(),
@@ -157,7 +149,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     ]);
   }
 
-  /// Save user session to local storage so init() can restore it
   Future<void> _saveLocalSession(Map<String, dynamic> user) async {
     await _local.setString('current_user_employee_id', user['employee_id'] as String);
     await _local.setString('current_user_name', user['name'] as String);
@@ -177,7 +168,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final response = await _api.login(employeeId, password);
       final user = response['user'] as Map<String, dynamic>;
 
-      // Save user to local session so init() can restore info
       await _saveLocalSession(user);
 
       await _syncAfterAuth();
@@ -204,8 +194,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Change the logged-in user's password. Throws [ApiException] on failure
-  /// (e.g. wrong current password) so the UI can show the server's message.
   Future<void> changePassword(String oldPassword, String newPassword) async {
     await _api.changePassword(oldPassword, newPassword);
     await _local.setBool('current_user_must_change', false);
@@ -213,12 +201,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    // Record the logout in the audit log (best effort — the session is
-    // cleared locally no matter what the server says).
+
     try {
       await _api.logout();
     } catch (_) {
-      // Server unreachable — still clear the local session below.
+
     }
     await _api.clearToken();
     await _local.clearCurrentUser();

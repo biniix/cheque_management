@@ -53,7 +53,6 @@ class Account {
         updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
       );
 
-  /// Handle both num and String types from JSON (MySQL DECIMAL comes as String)
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is num) return value.toDouble();

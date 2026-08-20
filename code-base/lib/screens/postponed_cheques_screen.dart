@@ -8,20 +8,16 @@ import '../providers/cheque_books_provider.dart';
 import '../providers/cheques_provider.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/app_header.dart';
-import 'write_cheque_screen.dart';
 
-/// Lists cheques whose date is in the future ("postponed" / post-dated cheques).
-/// These are cheques that were written but the linked transaction takes effect
-/// on the cheque date.
-class PostponedChequesScreen extends ConsumerStatefulWidget {
-  const PostponedChequesScreen({super.key});
+class PostDatedChequesScreen extends ConsumerStatefulWidget {
+  const PostDatedChequesScreen({super.key});
 
   @override
-  ConsumerState<PostponedChequesScreen> createState() =>
-      _PostponedChequesScreenState();
+  ConsumerState<PostDatedChequesScreen> createState() =>
+      _PostDatedChequesScreenState();
 }
 
-class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen> {
+class _PostDatedChequesScreenState extends ConsumerState<PostDatedChequesScreen> {
   @override
   void initState() {
     super.initState();
@@ -41,7 +37,7 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
     final dateFormat = DateFormat('MMM d, yyyy');
 
     final now = DateTime.now();
-    final postponed = cheques
+    final postDated = cheques
         .where((c) => c.date.isAfter(now))
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
@@ -54,64 +50,46 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
           Expanded(
             child: Column(
               children: [
-                const AppHeader(title: 'Postponed Cheques'),
+                const AppHeader(title: 'Post-dated Cheques'),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Summary stats
-                        Row(
+                      children: [        Row(
                           children: [
                             _summaryChip(
-                              '${postponed.length} cheque${postponed.length != 1 ? 's' : ''}',
+                              '${postDated.length} cheque${postDated.length != 1 ? 's' : ''}',
                               Icons.receipt_long_outlined,
                               const Color(0xFF6B7280),
                             ),
                             const SizedBox(width: 10),
                             _summaryChip(
-                              'ETB ${currencyFormat.format(postponed.fold(0.0, (s, c) => s + c.amount))}',
+                              'ETB ${currencyFormat.format(postDated.fold(0.0, (s, c) => s + c.amount))}',
                               Icons.payments_outlined,
                               const Color(0xFFEF4444),
                             ),
                             const SizedBox(width: 10),
-                            if (postponed.any((c) =>
+                            if (postDated.any((c) =>
                                 c.date.difference(now).inDays <= 7 &&
                                 c.date.isAfter(now)))
                               _summaryChip(
-                                '${postponed.where((c) => c.date.difference(now).inDays <= 7 && c.date.isAfter(now)).length} due this week',
+                                '${postDated.where((c) => c.date.difference(now).inDays <= 7 && c.date.isAfter(now)).length} due this week',
                                 Icons.warning_amber_rounded,
                                 const Color(0xFFD97706),
                               ),
-                            const Spacer(),
-                            TextButton.icon(
-                              onPressed: () =>
-                                  showWriteChequeDialog(context),
-                              icon: const Icon(Icons.add_rounded, size: 16),
-                              label: Text(
-                                'Write Cheque',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFF2563EB),
-                              ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
                         Expanded(
-                          child: postponed.isEmpty
+                          child: postDated.isEmpty
                               ? _buildEmptyState()
                               : ListView.separated(
-                                  itemCount: postponed.length,
+                                  itemCount: postDated.length,
                                   separatorBuilder: (_, __) =>
                                       const SizedBox(height: 8),
                                   itemBuilder: (context, index) {
-                                    final cheque = postponed[index];
+                                    final cheque = postDated[index];
                                     final book = books
                                         .where((b) =>
                                             b.id == cheque.chequebookId)
@@ -163,7 +141,6 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
     final target = DateTime(date.year, date.month, date.day);
     final daysLeft = target.difference(today).inDays;
 
-    // Urgency: green (30+), blue (7-30), amber (1-7), red (today)
     final (daysColor, daysBg, daysLabel) = switch (daysLeft) {
       0 => (
         const Color(0xFFDC2626),
@@ -192,7 +169,6 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
       ),
     };
 
-    // Progress bar: how much of the waiting period has elapsed
     final maxDays = daysLeft > 90 ? daysLeft.toDouble() : 90.0;
     final progress = (maxDays - daysLeft) / maxDays;
 
@@ -207,7 +183,6 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
         children: [
           Row(
             children: [
-              // Bank logo
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: Image.asset(
@@ -223,7 +198,6 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              // Cheque info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +257,6 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              // Amount
               Text(
                 'ETB ${currencyFormat.format(amount)}',
                 style: GoogleFonts.inter(
@@ -295,7 +268,6 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
             ],
           ),
           const SizedBox(height: 10),
-          // Progress bar
           Row(
             children: [
               Expanded(
@@ -367,7 +339,7 @@ class _PostponedChequesScreenState extends ConsumerState<PostponedChequesScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'No postponed cheques',
+            'No post-dated cheques',
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,

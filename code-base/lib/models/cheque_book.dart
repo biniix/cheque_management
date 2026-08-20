@@ -5,9 +5,6 @@ class ChequeBook {
   final String startNumber;
   final String endNumber;
 
-  /// The cheque template chosen when this book was created. When set, the
-  /// write-cheque flow renders exactly this template; otherwise it falls back
-  /// to the bank's template.
   final int? templateId;
 
   final DateTime createdAt;

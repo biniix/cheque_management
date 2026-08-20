@@ -26,7 +26,6 @@ import 'screens/statement_screen.dart';
 import 'screens/change_password_screen.dart';
 
 class AppRouter {
-  /// Creates a route with a smooth fade + slight scale transition.
   static Route<dynamic> _fadeRoute(Widget page, RouteSettings settings) {
     return PageRouteBuilder(
       pageBuilder: (_, __, ___) => page,
@@ -101,7 +100,7 @@ class AppRouter {
       case '/transactions':
         return _fadeRoute(const TransactionsScreen(), settings);
       case '/postponed-cheques':
-        return _fadeRoute(const PostponedChequesScreen(), settings);
+        return _fadeRoute(const PostDatedChequesScreen(), settings);
       case '/statement':
         return _fadeRoute(const StatementScreen(), settings);
       case '/admin/employees':

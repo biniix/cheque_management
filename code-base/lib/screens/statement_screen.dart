@@ -30,7 +30,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
     final accounts = ref.watch(accountsProvider);
     final transactions = ref.watch(transactionsProvider);
 
-    // Ensure a default selection once accounts load
     if (_selectedAccountIds.isEmpty && accounts.isNotEmpty) {
       Future.microtask(() {
         setState(() => _selectedAccountIds.addAll(accounts.map((a) => a.id)));
@@ -87,7 +86,7 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Controls card
+
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
@@ -177,7 +176,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            // Summary
                             Row(
                               children: [
                                 _summaryCard('Income', income,
@@ -197,7 +195,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            // List
                             Text(
                               '${filtered.length} Transaction${filtered.length != 1 ? 's' : ''} in period',
                               style: GoogleFonts.inter(
@@ -416,7 +413,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
     );
   }
 
-  // ── PDF generation ──
   Future<void> _printStatement(
     BuildContext context,
     List<Account> accounts,
@@ -434,7 +430,7 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
           margin: const pw.EdgeInsets.all(32),
           build: (pw.Context context) {
             return [
-              // Header
+
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -474,7 +470,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
               pw.Divider(color: PdfColors.grey300),
               pw.SizedBox(height: 12),
 
-              // Summary
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -485,7 +480,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
               ),
               pw.SizedBox(height: 16),
 
-              // Table header
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(vertical: 6),
                 decoration: const pw.BoxDecoration(
@@ -502,7 +496,6 @@ class _StatementScreenState extends ConsumerState<StatementScreen> {
               ),
               pw.SizedBox(height: 4),
 
-              // Rows
               if (transactions.isEmpty)
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(vertical: 16),

@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// A per-bank (and optional per-denomination) cheque design template,
-/// matching the `/cheque-designs` API response.
-///
-/// Every getter falls back to the current default design, so a template with
-/// only a few fields set still renders correctly.
 class ChequeDesign {
   final int id;
   final String bankKey;
@@ -28,7 +23,6 @@ class ChequeDesign {
   Map<String, dynamic> _map(String key) =>
       (layout[key] as Map<String, dynamic>?) ?? const {};
 
-  /// Logo placement: 'left' | 'center' | 'right' (default 'left').
   String get logoPosition =>
       (_map('logo')['position'] as String?) ?? 'left';
 
@@ -45,7 +39,6 @@ class ChequeDesign {
   bool get showHeadOffice =>
       (_map('header')['show_head_office'] as bool?) ?? true;
 
-  /// Cheque number placement: 'right' | 'left' | 'below' (default 'right').
   String get chequeNumberPosition =>
       (_map('cheque_number')['position'] as String?) ?? 'right';
 

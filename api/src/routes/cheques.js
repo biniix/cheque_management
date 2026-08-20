@@ -8,43 +8,16 @@ const { audit } = require('../utils/audit');
 
 router.use(auth);
 
-// ── Helper: format a raw DB cheque row for the Flutter app ──
 function formatCheque(cheque) {
   if (!cheque) return null;
   return {
     ...cheque,
-    // crossed is TINYINT(1) in MySQL → convert to boolean for Flutter
     crossed: cheque.crossed === 1 || cheque.crossed === true,
-    // amount as number
+    deducted: cheque.deducted === 1 || cheque.deducted === true,
     amount: parseFloat(cheque.amount),
   };
 }
 
-/**
- * @swagger
- * /cheques/books:
- *   get:
- *     summary: Get all cheque books
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of cheque books
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/ChequeBook'
- *       500:
- *         description: Server error
- */
 router.get('/books', async (req, res) => {
   try {
     const books = await db.all(`
@@ -64,39 +37,6 @@ router.get('/books', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheques/books:
- *   post:
- *     summary: Create a new cheque book
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [account_id, size, start_number]
- *             properties:
- *               account_id:
- *                 type: integer
- *               size:
- *                 type: integer
- *                 description: Number of cheques
- *                 example: 25
- *               start_number:
- *                 type: string
- *                 example: "1001"
- *     responses:
- *       201:
- *         description: Cheque book created
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
 router.post('/books', async (req, res) => {
   try {
     const { account_id, size, start_number } = req.body;
@@ -122,44 +62,6 @@ router.post('/books', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheques/books/{id}/next-number:
- *   get:
- *     summary: Get the next available cheque number for a cheque book
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Next cheque number
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     nextNumber:
- *                       type: string
- *                     remaining:
- *                       type: integer
- *       400:
- *         description: Cheque book is full
- *       404:
- *         description: Cheque book not found
- *       500:
- *         description: Server error
- */
 router.get('/books/:id/next-number', async (req, res) => {
   try {
     const book = await db.get(`
@@ -185,50 +87,6 @@ router.get('/books/:id/next-number', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheques:
- *   post:
- *     summary: Write (issue) a new cheque
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [chequebook_id, date, amount]
- *             properties:
- *               chequebook_id:
- *                 type: integer
- *               date:
- *                 type: string
- *                 format: date
- *               payee:
- *                 type: string
- *               amount:
- *                 type: number
- *               bearer_or_order:
- *                 type: string
- *                 enum: [bearer, order]
- *                 default: bearer
- *               crossed:
- *                 type: boolean
- *                 default: false
- *     responses:
- *       201:
- *         description: Cheque issued
- *       400:
- *         description: Validation error
- *       404:
- *         description: Cheque book not found
- *       409:
- *         description: Insufficient funds
- *       500:
- *         description: Server error
- */
 router.post('/', async (req, res) => {
   const conn = await db.beginTransaction();
   try {
@@ -287,8 +145,8 @@ router.post('/', async (req, res) => {
     const txnId = txnResult.insertId;
 
     const [chqResult] = await conn.query(
-      'INSERT INTO cheques (chequebook_id, transaction_id, cheque_number, date, payee, amount, amount_in_words, bearer_or_order, crossed, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [chequebook_id, txnId, chequeNumber, date, payee || '', amount, amountInWords, bearer_or_order, crossed ? 1 : 0, 'Issued']
+      'INSERT INTO cheques (chequebook_id, transaction_id, cheque_number, date, payee, amount, amount_in_words, bearer_or_order, crossed, status, deducted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [chequebook_id, txnId, chequeNumber, date, payee || '', amount, amountInWords, bearer_or_order, crossed ? 1 : 0, 'Issued', deductBalance ? 1 : 0]
     );
     const chequeId = chqResult.insertId;
 
@@ -319,20 +177,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheques:
- *   get:
- *     summary: Get all cheques
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of cheques
- *       500:
- *         description: Server error
- */
 router.get('/', async (req, res) => {
   try {
     const cheques = await db.all(`
@@ -348,28 +192,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheques/{id}:
- *   get:
- *     summary: Get a single cheque by ID
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Cheque details
- *       404:
- *         description: Cheque not found
- *       500:
- *         description: Server error
- */
 router.get('/:id', async (req, res) => {
   try {
     const cheque = await db.get(`
@@ -386,39 +208,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /cheques/{id}/status:
- *   patch:
- *     summary: Update cheque status (e.g. mark as Void)
- *     tags: [Cheques]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [status]
- *             properties:
- *               status:
- *                 type: string
- *                 enum: [Issued, Encashed, Void]
- *     responses:
- *       200:
- *         description: Status updated
- *       404:
- *         description: Cheque not found
- *       500:
- *         description: Server error
- */
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
@@ -433,12 +222,10 @@ router.patch('/:id/status', async (req, res) => {
 
     await db.run('UPDATE cheques SET status = ? WHERE id = ?', [status, req.params.id]);
 
-    // Refund amount to account when voiding
-    if (status === 'Void' && cheque.amount > 0) {
+    const wasDeducted = cheque.deducted === 1 || cheque.deducted === true;
+    if (status === 'Void' && cheque.amount > 0 && wasDeducted) {
       const newBalance = parseFloat(cheque.balance) + parseFloat(cheque.amount);
       await db.run('UPDATE accounts SET balance = ? WHERE id = ?', [newBalance, cheque.account_id]);
-      // Record the refund as a transaction so the balance stays consistent
-      // with the transaction history (keeps the balance trend chart correct).
       await db.run(
         `INSERT INTO transactions (account_id, type, method, amount, date, description)
          VALUES (?, 'cheque_void', 'cheque', ?, CURDATE(), ?)`,

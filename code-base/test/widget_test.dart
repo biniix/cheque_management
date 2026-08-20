@@ -8,9 +8,7 @@ void main() {
       const ProviderScope(
         child: ChequeManagementApp(),
       ),
-    );
-
-    // Verify that the sign-in screen is shown
+    );
     expect(find.text('Cheque Management'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
     expect(find.text('Create Account'), findsNothing);

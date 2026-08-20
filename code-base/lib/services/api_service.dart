@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service for communicating with the Cheque Management API backend.
-/// Handles JWT auth tokens and all CRUD operations.
 class ApiService {
-  // Change this to your API server URL
+
   static const String baseUrl = 'http://localhost:3000/api';
 
   static final ApiService _instance = ApiService._internal();
@@ -80,7 +78,6 @@ class ApiService {
     );
   }
 
-  // ── Auth ──
   Future<Map<String, dynamic>> login(String employeeId, String password) async {
     final response = await _post('/auth/login', {'employee_id': employeeId, 'password': password}, withAuth: false);
     await _saveToken(response['token'] as String);
@@ -94,13 +91,10 @@ class ApiService {
     });
   }
 
-  /// Tell the server the current user logged out (records an audit entry).
-  /// Best-effort — the caller clears the token regardless of the outcome.
   Future<void> logout() async {
     await _post('/auth/logout', const {});
   }
 
-  // ── Accounts ──
   Future<List<Map<String, dynamic>>> getAccounts() async {
     final response = await _get('/accounts');
     return (response['data'] as List<dynamic>).cast<Map<String, dynamic>>();
@@ -120,7 +114,6 @@ class ApiService {
     await _delete('/accounts/$id');
   }
 
-  // ── Employees (admin only) ──
   Future<List<Map<String, dynamic>>> getEmployees() async {
     final response = await _get('/employees');
     return (response['data'] as List<dynamic>).cast<Map<String, dynamic>>();
@@ -145,7 +138,6 @@ class ApiService {
     await _delete('/employees/$id');
   }
 
-  // ── Audit logs (admin only) ──
   Future<List<Map<String, dynamic>>> getAuditLogs({
     int limit = 300,
     String? action,
@@ -166,7 +158,6 @@ class ApiService {
     return (body['data'] as List<dynamic>).cast<Map<String, dynamic>>();
   }
 
-  // ── Customers ──
   Future<List<Map<String, dynamic>>> getCustomers() async {
     final response = await _get('/customers');
     return (response['data'] as List<dynamic>).cast<Map<String, dynamic>>();
@@ -186,7 +177,6 @@ class ApiService {
     await _delete('/customers/$id');
   }
 
-  // ── Transactions ──
   Future<Map<String, dynamic>> createTransaction(Map<String, dynamic> transaction) async {
     final response = await _post('/transactions', transaction);
     return response['data'] as Map<String, dynamic>;
@@ -206,13 +196,11 @@ class ApiService {
     await _delete('/transactions/$id');
   }
 
-  // ── Cheque designs (per-bank templates) ──
   Future<List<Map<String, dynamic>>> getChequeDesigns() async {
     final response = await _get('/cheque-designs');
     return (response['data'] as List<dynamic>).cast<Map<String, dynamic>>();
   }
 
-  // ── Cheques ──
   Future<List<Map<String, dynamic>>> getCheques() async {
     final response = await _get('/cheques');
     return (response['data'] as List<dynamic>).cast<Map<String, dynamic>>();
@@ -238,12 +226,10 @@ class ApiService {
     return response['data'] as Map<String, dynamic>;
   }
 
-  // ── Transfers ──
   Future<Map<String, dynamic>> recordTransfer(Map<String, dynamic> transfer) async {
     return await _post('/transfers', transfer);
   }
 
-  // ── Dashboard ──
   Future<Map<String, dynamic>> getDashboard() async {
     final response = await _get('/dashboard');
     return response['data'] as Map<String, dynamic>;

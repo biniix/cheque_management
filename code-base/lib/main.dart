@@ -5,16 +5,12 @@ import 'theme.dart';
 import 'router.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Catch and log all Flutter errors
+  WidgetsFlutterBinding.ensureInitialized();
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('═══ FlutterError: ${details.exception} ═══');
     debugPrint('${details.stack}');
-  };
-
-  // Custom error widget shown when a build throws
+  };
   ErrorWidget.builder = (FlutterErrorDetails errorDetails) {
     return Material(
       color: const Color(0xFFF5F7FA),

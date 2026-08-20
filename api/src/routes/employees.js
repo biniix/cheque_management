@@ -7,7 +7,6 @@ const { audit } = require('../utils/audit');
 
 router.use(auth);
 
-/** Admin-only guard — every route in this file requires the admin role. */
 function adminOnly(req, res, next) {
   if (req.userRole !== 'admin') {
     return res.status(403).json({ success: false, message: 'Admin access required' });
@@ -15,7 +14,6 @@ function adminOnly(req, res, next) {
   next();
 }
 
-/** Parse the module_access JSON column into an array (tolerant of bad data). */
 function parseModules(row) {
   try {
     const parsed = JSON.parse(row.module_access || '[]');
@@ -25,7 +23,6 @@ function parseModules(row) {
   }
 }
 
-/** Shape a user row for API responses (never expose password_hash). */
 function formatEmployee(user) {
   return {
     id: user.id,
@@ -40,7 +37,6 @@ function formatEmployee(user) {
   };
 }
 
-/** Generate the next employee ID, e.g. EMP-001, EMP-002 ... based on the highest existing number. */
 async function nextEmployeeId() {
   const rows = await db.all("SELECT employee_id FROM users WHERE employee_id LIKE 'EMP-%'");
   let max = 0;
@@ -53,22 +49,6 @@ async function nextEmployeeId() {
   return `EMP-${String(max + 1).padStart(3, '0')}`;
 }
 
-/**
- * @swagger
- * /employees:
- *   get:
- *     summary: List all employees (admin only)
- *     tags: [Employees]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of employees
- *       403:
- *         description: Admin access required
- *       500:
- *         description: Server error
- */
 router.get('/', adminOnly, async (req, res) => {
   try {
     const users = await db.all('SELECT * FROM users ORDER BY created_at ASC');
@@ -78,47 +58,6 @@ router.get('/', adminOnly, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /employees:
- *   post:
- *     summary: Create a new employee (admin only). Employee ID is auto-generated.
- *     tags: [Employees]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [name, password]
- *             properties:
- *               name:
- *                 type: string
- *                 example: John Doe
- *               position:
- *                 type: string
- *                 example: Accountant
- *               password:
- *                 type: string
- *                 example: temp1234
- *               module_access:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [home, accounts, customers, transactions, cheques]
- *                 example: [home, accounts, transactions]
- *     responses:
- *       201:
- *         description: Employee created
- *       400:
- *         description: Validation error
- *       403:
- *         description: Admin access required
- *       500:
- *         description: Server error
- */
 router.post('/', adminOnly, async (req, res) => {
   try {
     const { name, position = '', password, module_access = [] } = req.body;
@@ -153,47 +92,6 @@ router.post('/', adminOnly, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /employees/{id}:
- *   put:
- *     summary: Edit an employee (admin only). Leave password empty to keep the current one.
- *     tags: [Employees]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               position:
- *                 type: string
- *               password:
- *                 type: string
- *               module_access:
- *                 type: array
- *                 items:
- *                   type: string
- *     responses:
- *       200:
- *         description: Employee updated
- *       403:
- *         description: Admin access required
- *       404:
- *         description: Employee not found
- *       500:
- *         description: Server error
- */
 router.put('/:id', adminOnly, async (req, res) => {
   try {
     const employee = await db.get('SELECT * FROM users WHERE id = ?', [req.params.id]);
@@ -228,8 +126,7 @@ router.put('/:id', adminOnly, async (req, res) => {
     if (passwordReset) {
       updates.push('password_hash = ?');
       params.push(await bcrypt.hash(String(password), 10));
-      // Admin set/reset the password — force the employee to pick their own
-      // on next login so the admin never knows the final password.
+
       updates.push('must_change_password = 1');
     }
     if (module_access !== undefined) {
@@ -254,40 +151,6 @@ router.put('/:id', adminOnly, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /employees/{id}/status:
- *   patch:
- *     summary: Activate or deactivate an employee (admin only). The admin account cannot be deactivated.
- *     tags: [Employees]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [is_active]
- *             properties:
- *               is_active:
- *                 type: boolean
- *     responses:
- *       200:
- *         description: Status updated
- *       403:
- *         description: Admin access required
- *       404:
- *         description: Employee not found
- *       500:
- *         description: Server error
- */
 router.patch('/:id/status', adminOnly, async (req, res) => {
   try {
     const { is_active } = req.body;
@@ -311,30 +174,6 @@ router.patch('/:id/status', adminOnly, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /employees/{id}:
- *   delete:
- *     summary: Delete an employee (admin only). The admin account cannot be deleted.
- *     tags: [Employees]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Employee deleted
- *       403:
- *         description: Admin access required
- *       404:
- *         description: Employee not found
- *       500:
- *         description: Server error
- */
 router.delete('/:id', adminOnly, async (req, res) => {
   try {
     const employee = await db.get('SELECT * FROM users WHERE id = ?', [req.params.id]);

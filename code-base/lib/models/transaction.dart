@@ -56,7 +56,6 @@ class Transaction {
         createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
       );
 
-  /// Handle both num and String types from JSON (MySQL DECIMAL comes as String)
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is num) return value.toDouble();

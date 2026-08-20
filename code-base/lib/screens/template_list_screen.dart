@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
 import '../providers/cheque_templates_provider.dart';
+import '../utils/amount_to_words.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/app_header.dart';
+import '../widgets/cheque_renderer.dart';
 
-/// Displays all saved cheque templates as a row-based list.
 class TemplateListScreen extends ConsumerStatefulWidget {
   const TemplateListScreen({super.key});
 
@@ -42,7 +43,6 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Summary + actions row
                         Row(
                           children: [
                             Text(
@@ -118,9 +118,7 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          Navigator.pushNamed(context, '/admin/template-editor');
-        },
+        onTap: () => _showPreview(context, item),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -129,7 +127,6 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
           ),
           child: Row(
             children: [
-              // Bank logo
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
@@ -150,7 +147,6 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
                 ),
               ),
               const SizedBox(width: 14),
-              // Template name + bank
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,13 +170,10 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
                   ],
                 ),
               ),
-              // Canvas size badge
               _infoBadge('$w × $h mm'),
               const SizedBox(width: 8),
-              // Fields count
               _infoBadge('$textFields text · $imageFields image'),
               const SizedBox(width: 8),
-              // Created date
               Text(
                 _formatDate(t.createdAt),
                 style: GoogleFonts.inter(
@@ -189,7 +182,6 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Edit button
               IconButton(
                 icon: const Icon(Icons.edit_outlined,
                     size: 18, color: Color(0xFF6B7280)),
@@ -198,7 +190,123 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
                   Navigator.pushNamed(context, '/admin/template-editor');
                 },
               ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded,
+                    size: 18, color: Color(0xFFEF4444)),
+                tooltip: 'Delete template',
+                onPressed: () => _confirmDelete(context, t),
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPreview(BuildContext context, ChequeTemplateWithFields item) {
+    final t = item.template;
+    final fields = item.fields;
+    final bankName = t.bankName.isNotEmpty
+        ? t.bankName
+        : Constants.getBankName(t.bankKey);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        Constants.getBankLogoPath(t.bankKey),
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.account_balance_rounded,
+                            size: 24,
+                            color: Color(0xFF2563EB)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.templateName.isNotEmpty ? t.templateName : bankName,
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1A1D26),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            bankName,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded,
+                          size: 20, color: Color(0xFF6B7280)),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: ChequeRenderer(
+                    template: t,
+                    fields: fields,
+                    bankKey: t.bankKey,
+                    bankName: bankName,
+                    branch: 'Head Office · Addis Ababa',
+                    date: DateTime.now(),
+                    payee: 'Tesfaye Belay',
+                    amount: 15000,
+                    amountInWords: amountToWords(15000),
+                    chequeNumber: '000001',
+                    status: 'Issued',
+                    crossed: false,
+                    isPreview: false,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -229,6 +337,42 @@ class _TemplateListScreenState extends ConsumerState<TemplateListScreen> {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+
+  void _confirmDelete(BuildContext context, dynamic t) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Delete template?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        content: Text(
+          'Delete "${t.templateName.isNotEmpty ? t.templateName : Constants.getBankName(t.bankKey)}"? '
+          'Cheques for this bank can no longer be written until a new template is created.',
+          style: GoogleFonts.inter(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(color: const Color(0xFF6B7280))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(chequeTemplatesProvider.notifier).deleteTemplate(t.id);
+    }
   }
 
   Widget _buildEmptyState() {

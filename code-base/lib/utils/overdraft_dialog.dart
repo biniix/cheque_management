@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-/// Shows an informational warning when account balance is insufficient to
-/// cover a cheque. It never blocks the user — it just informs them. Always
-/// returns `true` so the cheque flow can continue.
 Future<bool> showOverdraftWarningDialog(
   BuildContext context, {
   required String accountName,

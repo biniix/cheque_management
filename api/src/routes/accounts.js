@@ -7,58 +7,14 @@ const { audit } = require('../utils/audit');
 
 router.use(auth);
 
-/** Human-friendly account label for audit details. */
 function accountLabel(account) {
   return account.account_name
     ? `${account.bank_name} (${account.account_name})`
     : account.bank_name;
 }
 
-/**
- * @swagger
- * /accounts:
- *   get:
- *     summary: Get all accounts (shared company ledger — every user sees the same accounts)
- *     tags: [Accounts]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of accounts
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       user_id:
- *                         type: integer
- *                       bank_name:
- *                         type: string
- *                       bank_key:
- *                         type: string
- *                       account_name:
- *                         type: string
- *                       account_number:
- *                         type: string
- *                       balance:
- *                         type: number
- *                       is_visible:
- *                         type: integer
- *       500:
- *         description: Server error
- */
 router.get('/', async (req, res) => {
   try {
-    // Shared company ledger: every authenticated user sees all accounts.
     const accounts = await db.all('SELECT * FROM accounts');
     res.json({ success: true, data: accounts });
   } catch (err) {
@@ -66,41 +22,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /accounts:
- *   post:
- *     summary: Create a new bank account
- *     tags: [Accounts]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [bank_name]
- *             properties:
- *               bank_name:
- *                 type: string
- *                 example: Commercial Bank of Ethiopia
- *               bank_key:
- *                 type: string
- *                 example: CBE
- *               account_name:
- *                 type: string
- *               account_number:
- *                 type: string
- *               balance:
- *                 type: number
- *                 default: 0
- *     responses:
- *       201:
- *         description: Account created
- *       500:
- *         description: Server error
- */
 router.post('/', async (req, res) => {
   try {
     const { bank_name, bank_key, account_name, account_number, balance = 0 } = req.body;
@@ -118,29 +39,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /accounts/{id}:
- *   get:
- *     summary: Get account details with transactions
- *     tags: [Accounts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Account ID
- *     responses:
- *       200:
- *         description: Account details with transactions
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
 router.get('/:id', async (req, res) => {
   try {
     const account = await db.get('SELECT * FROM accounts WHERE id = ?', [req.params.id]);
@@ -155,46 +53,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /accounts/{id}:
- *   put:
- *     summary: Update an account
- *     tags: [Accounts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               bank_name:
- *                 type: string
- *               bank_key:
- *                 type: string
- *               account_name:
- *                 type: string
- *               account_number:
- *                 type: string
- *               balance:
- *                 type: number
- *               is_visible:
- *                 type: boolean
- *     responses:
- *       200:
- *         description: Account updated
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
 router.put('/:id', async (req, res) => {
   try {
     const account = await db.get('SELECT * FROM accounts WHERE id = ?', [req.params.id]);
@@ -222,28 +80,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /accounts/{id}:
- *   delete:
- *     summary: Delete an account
- *     tags: [Accounts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Account deleted
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
 router.delete('/:id', async (req, res) => {
   try {
     const account = await db.get('SELECT * FROM accounts WHERE id = ?', [req.params.id]);
@@ -258,45 +94,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /accounts/{id}/deposit:
- *   post:
- *     summary: Deposit money into an account
- *     tags: [Accounts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [amount]
- *             properties:
- *               amount:
- *                 type: number
- *                 example: 5000
- *               date:
- *                 type: string
- *                 format: date
- *                 example: 2026-07-30
- *               description:
- *                 type: string
- *     responses:
- *       201:
- *         description: Deposit successful
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
 router.post('/:id/deposit', async (req, res) => {
   const conn = await db.beginTransaction();
   try {

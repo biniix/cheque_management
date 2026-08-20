@@ -8,8 +8,6 @@ import '../../providers/audit_logs_provider.dart';
 import '../../widgets/sidebar.dart';
 import '../../widgets/app_header.dart';
 
-/// Admin-only activity log: every login, logout, create, update, delete and
-/// password change across the system, newest first.
 class AuditLogsScreen extends ConsumerStatefulWidget {
   const AuditLogsScreen({super.key});
 
@@ -74,7 +72,6 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
     _debounce = Timer(const Duration(milliseconds: 400), _load);
   }
 
-  /// Icon + accent color for each action type.
   (IconData, Color) _actionStyle(String action) {
     switch (action) {
       case 'login':
@@ -127,7 +124,7 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Filters row ──
+
                         Row(
                           children: [
                             Expanded(
@@ -181,7 +178,6 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // ── Count ──
                         Text(
                           '${logs.length} activit${logs.length == 1 ? 'y' : 'ies'} recorded',
                           style: GoogleFonts.inter(
@@ -192,13 +188,13 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // ── List ──
                         Expanded(
                           child: _loading
                               ? const Center(child: CircularProgressIndicator())
                               : logs.isEmpty
                                   ? _buildEmptyState(context)
                                   : ListView.separated(
+                                      padding: const EdgeInsets.only(right: 8),
                                       itemCount: logs.length,
                                       separatorBuilder: (_, __) =>
                                           const SizedBox(height: 8),
@@ -218,7 +214,6 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
     );
   }
 
-  /// Dropdown used for the action and entity filters.
   Widget _filterDropdown<T>({
     required T? value,
     required String hint,
@@ -279,7 +274,7 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
       ),
       child: Row(
         children: [
-          // Action icon
+
           Container(
             width: 38,
             height: 38,
@@ -290,7 +285,7 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
             child: Icon(icon, size: 18, color: accent),
           ),
           const SizedBox(width: 12),
-          // Details + actor/time
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +316,7 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Action badge
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(

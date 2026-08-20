@@ -18,7 +18,6 @@ class BankDetailScreen extends ConsumerWidget {
     final accounts = ref.watch(accountsProvider);
     final transactions = ref.watch(transactionsProvider);
 
-    // Parse accountKey to find the account (it's either an ID or bankKey-last4)
     final accountId = int.tryParse(accountKey);
     Account? account;
     if (accountId != null) {
@@ -26,7 +25,7 @@ class BankDetailScreen extends ConsumerWidget {
         account = accounts.firstWhere((a) => a.id == accountId);
       } catch (_) {}
     } else {
-      // Try to find by bank key
+
       final parts = accountKey.split('-');
       if (parts.isNotEmpty) {
         final bankKey = parts[0];
@@ -77,7 +76,6 @@ class BankDetailScreen extends ConsumerWidget {
     final currencyFormat = NumberFormat('#,##0.00', 'en_US');
     final dateFormat = DateFormat('MMM d, yyyy h:mm a');
 
-    // Calculate credit/debit totals
     double totalCredits = 0;
     double totalDebits = 0;
     for (final tx in accountTransactions) {
@@ -88,7 +86,6 @@ class BankDetailScreen extends ConsumerWidget {
       }
     }
 
-    // Prepare chart spots for last 7 days
     final chartSpots = <FlSpot>[];
     final now = DateTime.now();
     double runningBalance = balance;
@@ -99,7 +96,6 @@ class BankDetailScreen extends ConsumerWidget {
           tx.date.isAfter(dayStart) &&
           tx.date.isBefore(dayStart.add(const Duration(days: 1))));
 
-      // Adjust balance for this day's transactions
       for (final tx in dayTx) {
         runningBalance -= tx.amount;
       }
@@ -212,7 +208,7 @@ class BankDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Stats Row
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
@@ -239,7 +235,6 @@ class BankDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Chart — only show if there are transactions for this account
                 if (accountTransactions.isNotEmpty && chartSpots.length > 1) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -348,7 +343,6 @@ class BankDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
 
-                // Transactions
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(

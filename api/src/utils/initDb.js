@@ -9,7 +9,7 @@ async function initDatabase() {
     password: process.env.DB_PASSWORD || '',
   });
 
-  const dbName = process.env.DB_NAME || 'cheque_management_db';
+  const dbName = process.env.DB_NAME || 'database';
   await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
   await conn.query(`USE \`${dbName}\``);
 
@@ -30,15 +30,10 @@ async function initDatabase() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  // ── Auto-migrate existing tables (older versions used `email`, had no
-  // payment method, etc.) — runs on every startup and only touches what is
-  // missing, so it is safe to run repeatedly.
   await migrateUsersTable(conn);
   await migrateTransactionsTable(conn);
+  await migrateChequesTable(conn);
 
-  // Seed the default admin account (employee_id: admin / password: password).
-  // Only inserts if the 'admin' employee_id does not already exist, so it never
-  // overwrites an existing admin or its password.
   const adminHash = await bcrypt.hash('password', 10);
   await conn.query(
     `INSERT INTO users (name, employee_id, password_hash, role, position, is_active, module_access)
@@ -127,11 +122,6 @@ async function initDatabase() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  // ── Per-bank cheque design templates ──
-  // bank_key + denomination uniquely identify a template. denomination ''
-  // means the design applies to every leaf of that bank; a specific value
-  // (e.g. '50' for the 50-birr leaf) overrides it. Wallet services
-  // (telebirr / mpesa) intentionally have no templates — they are not banks.
   await conn.query(`
     CREATE TABLE IF NOT EXISTS cheque_designs (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -144,9 +134,6 @@ async function initDatabase() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  // Seed placeholder templates only when the table is empty (never overwrites
-  // edits made by the admin). Two demo placements — CBE with a centered logo,
-  // Dashen with a top-left logo — to be corrected once the user reviews.
   const designCount = await conn.query('SELECT COUNT(*) AS n FROM cheque_designs');
   if (designCount[0][0].n === 0) {
     const seeds = [
@@ -202,7 +189,6 @@ async function initDatabase() {
   await conn.end();
 }
 
-/** Add columns to an existing transactions table that newer schema expects. */
 async function migrateTransactionsTable(conn) {
   const [columns] = await conn.query('SHOW COLUMNS FROM transactions');
   const names = columns.map(c => c.Field);
@@ -212,17 +198,10 @@ async function migrateTransactionsTable(conn) {
   }
 }
 
-/**
- * Upgrade an existing `users` table to the current shape:
- *  - rename `email` → `employee_id` (older schema)
- *  - add role, position, is_active, module_access if missing
- *  - ensure employee_id stays unique
- */
 async function migrateUsersTable(conn) {
   const [columns] = await conn.query('SHOW COLUMNS FROM users');
   const names = columns.map(c => c.Field);
 
-  // 1. employee_id column
   if (!names.includes('employee_id')) {
     if (names.includes('email')) {
       await conn.query('ALTER TABLE users CHANGE COLUMN email employee_id VARCHAR(50) NOT NULL');
@@ -233,8 +212,6 @@ async function migrateUsersTable(conn) {
     }
   }
 
-  // 2. Ensure employee_id has a unique index (best effort — legacy duplicate
-  //    data would make this fail, and that is fine: log and continue).
   const [indexes] = await conn.query('SHOW INDEX FROM users');
   const hasUniqueEmployeeId = indexes.some(
     i => i.Column_name === 'employee_id' && i.Non_unique === 0
@@ -248,11 +225,6 @@ async function migrateUsersTable(conn) {
     }
   }
 
-  // 3. Make employee_id case-sensitive. The table's default collation is
-  //    utf8mb4_unicode_ci (case-insensitive), so 'emp-001' and 'EMP-001' would
-  //    otherwise be treated as the same account. Safe to run repeatedly; the
-  //    case-insensitive unique index meant case-variant duplicates were never
-  //    insertable.
   try {
     const [cols] = await conn.query('SHOW COLUMNS FROM users');
     const col = cols.find(c => c.Field === 'employee_id');
@@ -264,7 +236,6 @@ async function migrateUsersTable(conn) {
     console.warn('  ⚠ Could not make employee_id case-sensitive:', err.message);
   }
 
-  // 4. New access-control columns
   const additions = [
     ["role VARCHAR(20) NOT NULL DEFAULT 'employee' AFTER employee_id", 'role'],
     ["position VARCHAR(100) NOT NULL DEFAULT '' AFTER role", 'position'],
@@ -280,7 +251,15 @@ async function migrateUsersTable(conn) {
   }
 }
 
-// If called directly via `node src/utils/initDb.js`, run standalone
+async function migrateChequesTable(conn) {
+  const [columns] = await conn.query('SHOW COLUMNS FROM cheques');
+  const names = columns.map(c => c.Field);
+  if (!names.includes('deducted')) {
+    await conn.query("ALTER TABLE cheques ADD COLUMN deducted TINYINT(1) NOT NULL DEFAULT 1 AFTER status");
+    console.log('  ↪ Added cheques.deducted');
+  }
+}
+
 if (require.main === module) {
   initDatabase().catch(err => {
     console.error('❌ Database initialization failed:', err);

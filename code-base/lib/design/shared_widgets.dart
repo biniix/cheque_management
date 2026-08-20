@@ -1,18 +1,12 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 
-/// A collection of reusable widgets and helper methods used throughout the app.
-/// Keeps screens DRY and consistent.
 class AppWidgets {
   AppWidgets._();
 
-  // ─────────────────────────────────────────────────────────
-  //  SECTION LABEL
-  // ─────────────────────────────────────────────────────────
   static Widget sectionLabel(BuildContext context, String label) {
     return Text(
       label,
@@ -20,9 +14,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  FORM FIELD
-  // ─────────────────────────────────────────────────────────
   static Widget formField(
     BuildContext context,
     String label,
@@ -81,11 +72,6 @@ class AppWidgets {
     );
   }
 
-
-
-  // ─────────────────────────────────────────────────────────
-  //  DROPDOWN
-  // ─────────────────────────────────────────────────────────
   static Widget dropdown<T>(
     BuildContext context,
     String label, {
@@ -121,9 +107,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  PAYMENT METHOD PICKER (cash / cheque / mobile / bank / loan)
-  // ─────────────────────────────────────────────────────────
   static Widget paymentMethodPicker(
     BuildContext context, {
     required String selected,
@@ -136,7 +119,7 @@ class AppWidgets {
         final isSelected = m.key == selected;
         return ChoiceChip(
           label: Text(
-            m.value.split(' ').first, // short label: Cash, Cheque, Mobile...
+            m.value.split(' ').first,
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -161,9 +144,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  STATUS BADGE
-  // ─────────────────────────────────────────────────────────
   static Widget statusBadge(BuildContext context, String status) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -182,9 +162,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  STATUS PILL (for cheque leaf / detail views)
-  // ─────────────────────────────────────────────────────────
   static Widget statusPill(BuildContext context, String status) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -211,9 +188,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  DETAIL ROW
-  // ─────────────────────────────────────────────────────────
   static Widget detailRow(BuildContext context, String label, String value, {bool isMono = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -248,9 +222,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  STAT CARD
-  // ─────────────────────────────────────────────────────────
   static Widget statCard(BuildContext context, {
     required IconData icon,
     required String title,
@@ -294,9 +265,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  ACTION CARD (for quick actions / cheques screen)
-  // ─────────────────────────────────────────────────────────
   static Widget actionCard({
     required IconData icon,
     required String label,
@@ -335,9 +303,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  QUICK ACTION CARD (home screen)
-  // ─────────────────────────────────────────────────────────
   static Widget quickActionCard({
     required IconData icon,
     required String label,
@@ -388,9 +353,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  EMPTY STATE
-  // ─────────────────────────────────────────────────────────
   static Widget emptyState(BuildContext context, {
     required IconData icon,
     required String title,
@@ -450,9 +412,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  SEGMENTED TOGGLE (bearer/order, open/crossed, etc.)
-  // ─────────────────────────────────────────────────────────
   static Widget segmentedToggle(
     BuildContext context, {
     required String option1,
@@ -533,9 +492,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  ICON CONTAINER (for list items)
-  // ─────────────────────────────────────────────────────────
   static Widget iconBox({
     required IconData icon,
     required Color color,
@@ -553,9 +509,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  INFO BANNER
-  // ─────────────────────────────────────────────────────────
   static Widget infoBanner(BuildContext context, {
     required IconData icon,
     required String title,
@@ -599,11 +552,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  TOAST HELPERS
-  // ─────────────────────────────────────────────────────────
-  /// Compact toast anchored to the bottom-right corner instead of stretching
-  /// full width. On narrow screens the left margin shrinks so it never overflows.
   static void showToast(BuildContext context, String message, {bool isSuccess = true}) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     const toastWidth = 340.0;
@@ -622,8 +570,6 @@ class AppWidgets {
     );
   }
 
-  /// Opens [child] in a popup dialog with a blurred, darkened background and a
-  /// fade + scale pop-in. Returns the dialog's result (from Navigator.pop).
   static Future<T?> showBlurredDialog<T>(
     BuildContext context,
     Widget child, {
@@ -638,25 +584,14 @@ class AppWidgets {
       barrierColor: Colors.black.withValues(alpha: 0.35),
       transitionDuration: const Duration(milliseconds: 220),
       transitionBuilder: (context, anim, _, child) {
-        return Stack(
-          children: [
-            // Full-screen blur behind the popup
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                child: const SizedBox.expand(),
-              ),
+        return FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1).animate(
+              CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
             ),
-            FadeTransition(
-              opacity: anim,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.95, end: 1).animate(
-                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-                ),
-                child: child,
-              ),
-            ),
-          ],
+            child: child,
+          ),
         );
       },
       pageBuilder: (context, _, __) => Dialog(
@@ -677,13 +612,6 @@ class AppWidgets {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  CONFIRM DIALOG
-  // ─────────────────────────────────────────────────────────
-  /// Modern confirmation dialog: blurred, darkened backdrop with a fade +
-  /// bounce pop-in, an icon badge, centered copy, and two full-width buttons
-  /// (soft Cancel + accent Confirm). Pass [confirmColor] (e.g. red for
-  /// destructive actions) and a matching [icon] to style it.
   static Future<bool> confirmDialog(
     BuildContext context, {
     required String title,
@@ -701,25 +629,14 @@ class AppWidgets {
       barrierColor: Colors.black.withValues(alpha: 0.4),
       transitionDuration: const Duration(milliseconds: 220),
       transitionBuilder: (context, anim, _, child) {
-        return Stack(
-          children: [
-            // Soft blur behind the popup
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                child: const SizedBox.expand(),
-              ),
+        return FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1).animate(
+              CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
             ),
-            FadeTransition(
-              opacity: anim,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.9, end: 1).animate(
-                  CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
-                ),
-                child: child,
-              ),
-            ),
-          ],
+            child: child,
+          ),
         );
       },
       pageBuilder: (dialogContext, _, __) => Dialog(
@@ -733,7 +650,6 @@ class AppWidgets {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon badge
                 Container(
                   width: 64,
                   height: 64,
@@ -816,12 +732,6 @@ class AppWidgets {
     return result ?? false;
   }
 
-  // ─────────────────────────────────────────────────────────
-  //  DATE PICKER (closes immediately on tap)
-  // ─────────────────────────────────────────────────────────
-  /// Opens a calendar date picker that closes right away when a date is
-  /// tapped — no "OK" button needed. Returns the picked date, or null if the
-  /// dialog was dismissed.
   static Future<DateTime?> pickDate(
     BuildContext context, {
     required DateTime initialDate,
@@ -846,9 +756,5 @@ class AppWidgets {
       ),
     );
   }
-
-  // ─────────────────────────────────────────────────────────
-  //  INTERNAL HELPERS
-  // ─────────────────────────────────────────────────────────
 
 }
